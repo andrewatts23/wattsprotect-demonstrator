@@ -9,7 +9,7 @@
   <title>WattsProtect™ Demonstrator • Workflow Execution</title>
   <meta
     name="description"
-    content="WattsProtect™ Workflow Execution — review-only governed simulation of predictive calibration-integrity, workflow-governance, and evidence-preservation architecture."
+    content="WattsProtect™ Workflow Execution — review-only governed simulation with live contextual environmental ingestion."
   />
   <meta
     name="theme-color"
@@ -54,12 +54,12 @@
       <section class="sidebar-panel">
         <div class="sidebar-panel-label">Current Governed Path</div>
         <ol class="sidebar-sequence">
-          <li>Predictive review alert received</li>
-          <li>Technician role assigned</li>
-          <li>Review action required before closure</li>
-          <li>Escalation path remains available</li>
-          <li>Override requires justification</li>
-          <li>Evidence completion blocks final closure</li>
+          <li>Live context is ingested and classified</li>
+          <li>Predictive review alert is opened</li>
+          <li>Technician role is assigned</li>
+          <li>Escalation remains available</li>
+          <li>Override requires preserved justification</li>
+          <li>Evidence completion blocks closure</li>
         </ol>
       </section>
 
@@ -67,8 +67,8 @@
         <div class="sidebar-panel-label">Boundary Reminder</div>
         <p class="sidebar-note">
           Workflow behavior shown in this demonstrator is a governed simulation of architecture
-          behavior and is not represented as validated site workflow, live GMP execution, or
-          deployment-authorized operational control.
+          behavior with live contextual input and is not represented as validated site workflow,
+          live GMP execution, or deployment-authorized operational control.
         </p>
       </section>
     </aside>
@@ -113,7 +113,7 @@
         <h2 class="card-title">This event is no longer an alert. It is now a governed path.</h2>
         <p class="card-text">
           Workflow execution is the point at which the demonstrator proves that predictive
-          legibility does not stand alone. Once the instrument state becomes review-worthy, the
+          legibility does not stand alone. Once the live contextual condition becomes material, the
           event must enter a controlled path in which role, decision, escalation, override, and
           evidence obligations are all explicit. This event cannot close through passive awareness
           alone. It must proceed through attributable human response.
@@ -155,10 +155,9 @@
           <div class="timeline-step">
             <div class="timeline-index">01</div>
             <div class="timeline-body">
-              <div class="timeline-title">Alert intake and event creation</div>
+              <div class="timeline-title">Live context intake and event creation</div>
               <div class="timeline-text">
-                Predictive review alert enters the governed path and is converted from system signal
-                into a formal workflow event.
+                Outside weather is ingested as bounded context and converted into a governed review event.
               </div>
             </div>
           </div>
@@ -296,7 +295,7 @@
 
           <p class="card-text">
             The active demonstrator path is intentionally conservative. It proves that the workflow
-            layer does not treat predictive signal alone as sufficient for closure or silent
+            layer does not treat live contextual signal alone as sufficient for closure or silent
             operational action.
           </p>
         </article>
@@ -318,9 +317,9 @@
         <h3 class="card-title">Governed response is not complete until evidence is preserved</h3>
         <p class="card-text">
           This page establishes the human side of the architecture. The system has not only seen the
-          condition. It has governed the response. But governance alone is not the end state. Unless
-          the full event meaning is sealed into an evidence-preserving record, the event remains
-          operationally incomplete. The next page proves that continuity.
+          live contextual condition. It has governed the response. But governance alone is not the
+          end state. Unless the full event meaning is sealed into an evidence-preserving record, the
+          event remains operationally incomplete. The next page proves that continuity.
         </p>
 
         <div class="hero-actions">
@@ -332,11 +331,12 @@
       <div data-wp-render="page-mount"></div>
       <div data-wp-render="simulation-controls"></div>
       <div data-wp-render="export-controls"></div>
+      <div data-wp-render="workflow-actions"></div>
 
       <footer class="footer">
         <div class="footer-copy">
-          WattsProtect™ Workflow Execution • Review Only • Governed Simulation • No implied
-          validation, implementation, deployment, commercialization, or derivative rights
+          WattsProtect™ Workflow Execution • Review Only • Governed Simulation with Live Context •
+          No implied validation, implementation, deployment, commercialization, or derivative rights
         </div>
         <div class="footer-copy" data-wp-render="footer-runtime"></div>
       </footer>
@@ -345,10 +345,12 @@
 
   <script src="./js/state.js"></script>
   <script src="./js/app.js"></script>
+  <script src="./js/live-environment.js"></script>
   <script src="./js/simulation.js"></script>
   <script src="./js/workflow-engine.js"></script>
   <script src="./js/evidence-engine.js"></script>
   <script src="./js/export-engine.js"></script>
   <script src="./js/render-engine.js"></script>
+  <script src="./js/action-controls.js"></script>
 </body>
 </html>
