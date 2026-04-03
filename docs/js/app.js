@@ -43,7 +43,14 @@
     resolved: "Resolved",
     open: "Open",
     available: "Available",
-    governed_workflow_action: "Governed Workflow Action"
+    governed_workflow_action: "Governed Workflow Action",
+    idle: "Idle",
+    loading: "Loading",
+    ready: "Ready",
+    error: "Error",
+    live_api_ingestion: "Live API Ingestion",
+    live_context_with_bounded_instrument_logic:
+      "Live Context with Bounded Instrument Logic"
   };
 
   const PAGE_IDS = new Set([
@@ -85,6 +92,16 @@
     return Number.isInteger(value) ? String(value) : value.toFixed(decimals);
   };
 
+  const formatSignedNumber = (value, decimals = 1, suffix = "") => {
+    if (typeof value !== "number" || Number.isNaN(value)) {
+      return "Unavailable";
+    }
+
+    const normalized = Number.isInteger(value) ? String(value) : value.toFixed(decimals);
+    const sign = value > 0 ? "+" : "";
+    return `${sign}${normalized}${suffix}`;
+  };
+
   const formatDateTime = (value) => {
     if (!value) {
       return "Unavailable";
@@ -117,10 +134,13 @@
   const findUserByRole = (role) =>
     state.users.find((item) => item.role === role) || null;
 
-  const activeInstrument = findInstrument("WP-TMP-104");
-  const activeWorkflow = findWorkflow("WF-104-REV-01");
-  const activeAlert = findAlert("ALT-WP-104-REV-01");
-  const activeActor = activeWorkflow ? findUserByRole(activeWorkflow.assignedRole) : null;
+  const getActiveInstrument = () => findInstrument("WP-TMP-104");
+  const getActiveWorkflow = () => findWorkflow("WF-104-REV-01");
+  const getActiveAlert = () => findAlert("ALT-WP-104-REV-01");
+  const getActiveActor = () => {
+    const workflow = getActiveWorkflow();
+    return workflow ? findUserByRole(workflow.assignedRole) : null;
+  };
 
   const safeText = (value) => {
     if (value === null || value === undefined) {
@@ -149,21 +169,19 @@
 
   const renderList = (items, type = "ul") => {
     const listTag = type === "ol" ? "ol" : "ul";
-    const listItems = items
-      .map((item) => `<li>${safeText(item)}</li>`)
-      .join("");
-
+    const listItems = items.map((item) => `<li>${safeText(item)}</li>`).join("");
     return `<${listTag}>${listItems}</${listTag}>`;
   };
 
   const serializeScenarioSnapshot = () => ({
     repository: state.repository,
+    liveEnvironment: state.liveEnvironment,
     activeScenario: state.activeScenario,
     metrics: state.metrics,
-    activeInstrument,
-    activeWorkflow,
-    activeAlert,
-    activeActor,
+    activeInstrument: getActiveInstrument(),
+    activeWorkflow: getActiveWorkflow(),
+    activeAlert: getActiveAlert(),
+    activeActor: getActiveActor(),
     environmentalWindow: state.environmentalWindow,
     historicalPattern: state.historicalPattern,
     evidence: state.evidence
@@ -191,6 +209,7 @@
       getPageId,
       formatLabel,
       formatNumber,
+      formatSignedNumber,
       formatDateTime,
       safeText,
       setText,
@@ -200,10 +219,10 @@
       findWorkflow,
       findAlert,
       findUserByRole,
-      activeInstrument,
-      activeWorkflow,
-      activeAlert,
-      activeActor,
+      getActiveInstrument,
+      getActiveWorkflow,
+      getActiveAlert,
+      getActiveActor,
       serializeScenarioSnapshot
     };
   };
