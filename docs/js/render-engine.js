@@ -6,23 +6,33 @@
   const workflowEngine = window.WP_DEMO_WORKFLOW;
   const evidenceEngine = window.WP_DEMO_EVIDENCE;
   const exportEngine = window.WP_DEMO_EXPORT;
+  const liveEnvironment = window.WP_DEMO_LIVE_ENV;
+  const state = window.WP_DEMO_STATE;
 
-  if (!app || !simulation || !workflowEngine || !evidenceEngine || !exportEngine) {
+  if (
+    !app ||
+    !simulation ||
+    !workflowEngine ||
+    !evidenceEngine ||
+    !exportEngine ||
+    !liveEnvironment ||
+    !state
+  ) {
     console.error("WattsProtect™ render engine dependencies are unavailable.");
     return;
   }
 
   const {
-    state,
     getPageId,
     formatLabel,
     formatNumber,
+    formatSignedNumber,
     formatDateTime,
     safeText
   } = app;
 
   const renderEngine = {
-    version: "1.0.0",
+    version: "2.0.0",
     mode: "page_binding_and_rendering",
 
     selectors: {
@@ -30,7 +40,7 @@
       simulationControls: "[data-wp-render='simulation-controls']",
       exportControls: "[data-wp-render='export-controls']",
       runtimeSummary: "[data-wp-render='runtime-summary']",
-      pageFooterRuntime: "[data-wp-render='footer-runtime']"
+      footerRuntime: "[data-wp-render='footer-runtime']"
     },
 
     createMetricCard(label, value, subvalue) {
@@ -110,75 +120,121 @@
         chainStatus:
           evidence && evidence.chainStatus
             ? formatLabel(evidence.chainStatus)
-            : "Unavailable"
+            : "Unavailable",
+        liveLocation: summary.liveEnvironment
+          ? summary.liveEnvironment.location
+          : "Unavailable",
+        liveStatus: summary.liveEnvironment
+          ? summary.liveEnvironment.status
+          : "Unavailable",
+        liveUpdatedAt: summary.liveEnvironment
+          ? summary.liveEnvironment.updatedAt
+          : null,
+        liveTemperature: summary.liveEnvironment
+          ? summary.liveEnvironment.temperatureCurrent
+          : "Unavailable",
+        liveHumidity: summary.liveEnvironment
+          ? summary.liveEnvironment.humidityCurrent
+          : "Unavailable",
+        livePressure: summary.liveEnvironment
+          ? summary.liveEnvironment.pressureCurrent
+          : "Unavailable"
       };
+    },
+
+    renderRuntimeSummary() {
+      const mount = document.querySelector(this.selectors.runtimeSummary);
+      if (!mount) return;
+
+      const summary = this.getRuntimeSummary();
+
+      mount.innerHTML = `
+        <section class="grid grid--three">
+          ${this.createMetricCard(
+            "Active Phase",
+            summary.phaseLabel,
+            summary.phaseDescription
+          )}
+          ${this.createMetricCard(
+            "Live Context",
+            summary.liveTemperature,
+            `${summary.liveHumidity} • ${summary.livePressure}`
+          )}
+          ${this.createMetricCard(
+            "Evidence Chain",
+            summary.chainStatus,
+            summary.closureBlocked
+              ? "Closure blocked pending evidence completion"
+              : "Closure gate released"
+          )}
+        </section>
+      `;
     },
 
     renderSimulationControls() {
       const mount = document.querySelector(this.selectors.simulationControls);
       if (!mount) return;
 
-      const phase = simulation.describePhase(state.activeScenario.phase);
-      const phases = [
-        "baseline",
-        "environmental_shift",
-        "review_pending",
-        "escalated_review",
-        "evidence_hold",
-        "export_ready"
-      ];
+      const currentLocation = state.liveEnvironment.activeLocation.label;
+      const lastUpdated = state.liveEnvironment.lastUpdatedAt
+        ? formatDateTime(state.liveEnvironment.lastUpdatedAt)
+        : "Unavailable";
 
       mount.innerHTML = `
         <section class="content-card content-card--full">
-          <div class="card-kicker">Simulation Control</div>
-          <h3 class="card-title">Governed demonstrator phase control</h3>
+          <div class="card-kicker">Live Environment Control</div>
+          <h3 class="card-title">Refresh live contextual input</h3>
           <p class="card-text">
-            Current phase: <strong>${safeText(phase.label)}</strong>. ${safeText(phase.description)}
+            This demonstrator ingests live outside temperature, humidity, and pressure as bounded contextual input.
           </p>
+
           <div class="hero-actions">
-            ${phases
-              .map(
-                (phaseKey) => `
-                <button
-                  type="button"
-                  class="button ${phaseKey === state.activeScenario.phase ? "" : "button--ghost"}"
-                  data-wp-phase="${safeText(phaseKey)}"
-                >
-                  ${safeText(simulation.describePhase(phaseKey).label)}
-                </button>
-              `
-              )
-              .join("")}
-            <button type="button" class="button button--ghost" data-wp-phase-advance="true">
-              Advance Phase
-            </button>
-            <button type="button" class="button button--ghost" data-wp-phase-reset="true">
-              Reset State
+            <input
+              type="text"
+              class="wp-text-input"
+              data-wp-live-location-input="true"
+              value="${safeText(currentLocation)}"
+              placeholder="Enter city, state"
+            />
+            <button type="button" class="button" data-wp-live-refresh="true">
+              Refresh Live Weather
             </button>
           </div>
+
+          <div class="hero-actions">
+            <button type="button" class="button button--ghost" data-wp-phase="baseline">Baseline</button>
+            <button type="button" class="button button--ghost" data-wp-phase="environmental_shift">Environmental Shift</button>
+            <button type="button" class="button button--ghost" data-wp-phase="review_pending">Review Pending</button>
+            <button type="button" class="button button--ghost" data-wp-phase="escalated_review">Escalated Review</button>
+            <button type="button" class="button button--ghost" data-wp-phase="evidence_hold">Evidence Hold</button>
+            <button type="button" class="button button--ghost" data-wp-phase="export_ready">Export Ready</button>
+          </div>
+
+          <p class="card-text">
+            Live status: <strong>${safeText(formatLabel(state.liveEnvironment.status))}</strong><br />
+            Last updated: <strong>${safeText(lastUpdated)}</strong>
+          </p>
         </section>
       `;
 
-      mount.querySelectorAll("[data-wp-phase]").forEach((button) => {
-        button.addEventListener("click", () => {
-          const phaseKey = button.getAttribute("data-wp-phase");
-          simulation.setPhase(phaseKey);
-          this.refresh();
-        });
-      });
+      const input = mount.querySelector("[data-wp-live-location-input='true']");
+      const refreshButton = mount.querySelector("[data-wp-live-refresh='true']");
 
-      const advanceButton = mount.querySelector("[data-wp-phase-advance='true']");
-      if (advanceButton) {
-        advanceButton.addEventListener("click", () => {
-          simulation.advance();
+      if (refreshButton && input) {
+        refreshButton.addEventListener("click", async () => {
+          refreshButton.disabled = true;
+          refreshButton.textContent = "Refreshing...";
+          await liveEnvironment.refresh(input.value.trim());
+          refreshButton.disabled = false;
+          refreshButton.textContent = "Refresh Live Weather";
           this.refresh();
         });
       }
 
-      const resetButton = mount.querySelector("[data-wp-phase-reset='true']");
-      if (resetButton) {
-        resetButton.addEventListener("click", () => {
-          simulation.resetState();
+      mount.querySelectorAll("[data-wp-phase]").forEach((button) => {
+        button.addEventListener("click", () => {
+          const phase = button.getAttribute("data-wp-phase");
+          simulation.setPhase(phase);
           this.refresh();
         });
       });
@@ -233,44 +289,17 @@
       });
     },
 
-    renderRuntimeSummary() {
-      const mount = document.querySelector(this.selectors.runtimeSummary);
-      if (!mount) return;
-
-      const summary = this.getRuntimeSummary();
-
-      mount.innerHTML = `
-        <section class="grid grid--three">
-          ${this.createMetricCard(
-            "Active Phase",
-            summary.phaseLabel,
-            summary.phaseDescription
-          )}
-          ${this.createMetricCard(
-            "Workflow",
-            summary.workflowId,
-            summary.closureBlocked ? "Closure blocked pending evidence completion" : "Closure gate released"
-          )}
-          ${this.createMetricCard(
-            "Evidence Chain",
-            summary.chainStatus,
-            "Runtime generated at " + formatDateTime(summary.generatedAt)
-          )}
-        </section>
-      `;
-    },
-
     renderFooterRuntime() {
-      const mount = document.querySelector(this.selectors.pageFooterRuntime);
+      const mount = document.querySelector(this.selectors.footerRuntime);
       if (!mount) return;
 
       const summary = this.getRuntimeSummary();
 
       mount.innerHTML = `
         Runtime Phase: ${safeText(summary.phaseLabel)} •
-        Instrument: ${safeText(summary.instrumentId)} •
-        Workflow: ${safeText(summary.workflowId)} •
-        Evidence: ${safeText(summary.chainStatus)}
+        Live Context: ${safeText(summary.liveTemperature)} • ${safeText(summary.liveHumidity)} •
+        Location: ${safeText(summary.liveLocation)} •
+        Updated: ${safeText(summary.liveUpdatedAt ? formatDateTime(summary.liveUpdatedAt) : "Unavailable")}
       `;
     },
 
@@ -278,33 +307,29 @@
       const mount = document.querySelector(this.selectors.pageMount);
       if (!mount) return;
 
-      const environment = state.environmentalWindow;
-      const activeInstrument =
-        state.instruments.find((item) => item.instrumentId === "WP-TMP-104") || null;
-
       mount.innerHTML = `
         <section class="grid grid--two">
           <article class="content-card">
-            <div class="card-kicker">Runtime Scenario Snapshot</div>
-            <h3 class="card-title">Current governed context</h3>
+            <div class="card-kicker">Live Context Snapshot</div>
+            <h3 class="card-title">Current bounded environmental input</h3>
             ${this.createCheckList([
-              `Temperature: ${formatNumber(environment.signals.temperatureF.current)}°F current • +${formatNumber(environment.signals.temperatureF.baselineDelta)}°F baseline delta`,
-              `Humidity: ${formatNumber(environment.signals.humidityRh.current, 0)}% RH current • +${formatNumber(environment.signals.humidityRh.baselineDelta, 0)} baseline delta`,
-              `Context Classification: ${formatLabel(environment.classification)}`,
-              `Scenario Phase: ${formatLabel(state.activeScenario.phase)}`
+              `Location: ${state.liveEnvironment.activeLocation.label}`,
+              `Temperature: ${formatNumber(state.environmentalWindow.signals.temperatureF.current)}°F (${formatSignedNumber(state.environmentalWindow.signals.temperatureF.baselineDelta, 1, "°F")} vs bounded baseline)`,
+              `Humidity: ${formatNumber(state.environmentalWindow.signals.humidityRh.current, 0)}% RH (${formatSignedNumber(state.environmentalWindow.signals.humidityRh.baselineDelta, 0, "")} vs bounded baseline)`,
+              `Pressure: ${formatNumber(state.environmentalWindow.signals.pressureHpa.current)} hPa (${formatSignedNumber(state.environmentalWindow.signals.pressureHpa.baselineDelta, 1, " hPa")} vs bounded baseline)`,
+              `Classification: ${formatLabel(state.environmentalWindow.classification)}`
             ])}
           </article>
 
           <article class="content-card">
-            <div class="card-kicker">Current Focal Instrument</div>
-            <h3 class="card-title">Primary instrument review posture</h3>
-            ${activeInstrument ? this.createBoundaryList([
-              `Instrument: ${activeInstrument.instrumentId}`,
-              `Predicted State: ${formatLabel(activeInstrument.predictedState)}`,
-              `Threshold Class: ${formatLabel(activeInstrument.thresholdProximityClass)}`,
-              `Workflow State: ${formatLabel(activeInstrument.workflowState)}`,
-              `Evidence State: ${formatLabel(activeInstrument.evidenceState)}`
-            ]) : ""}
+            <div class="card-kicker">Live Context Boundary</div>
+            <h3 class="card-title">What this live layer means</h3>
+            ${this.createBoundaryList([
+              "Outside weather is ingested as bounded contextual input.",
+              "Live environmental input is not represented as calibration truth.",
+              "Instrument logic remains bounded demonstrator logic.",
+              "Governed workflow and evidence obligations remain unchanged."
+            ])}
           </article>
         </section>
       `;
@@ -319,6 +344,33 @@
 
       mount.innerHTML = `
         <section class="content-card content-card--full">
+          <div class="card-kicker">Live Environmental Window</div>
+          <h3 class="card-title">Current live contextual interpretation</h3>
+          <div class="timeline-grid">
+            ${this.createTimelineStep(
+              "T",
+              "Temperature",
+              `${formatNumber(state.environmentalWindow.signals.temperatureF.current)}°F (${formatSignedNumber(state.environmentalWindow.signals.temperatureF.baselineDelta, 1, "°F")} vs baseline)`
+            )}
+            ${this.createTimelineStep(
+              "H",
+              "Humidity",
+              `${formatNumber(state.environmentalWindow.signals.humidityRh.current, 0)}% RH (${formatSignedNumber(state.environmentalWindow.signals.humidityRh.baselineDelta, 0, "")} vs baseline)`
+            )}
+            ${this.createTimelineStep(
+              "P",
+              "Pressure",
+              `${formatNumber(state.environmentalWindow.signals.pressureHpa.current)} hPa (${formatSignedNumber(state.environmentalWindow.signals.pressureHpa.baselineDelta, 1, " hPa")} vs baseline)`
+            )}
+            ${this.createTimelineStep(
+              "C",
+              "Classification",
+              `${formatLabel(state.environmentalWindow.classification)} • ${state.environmentalWindow.location}`
+            )}
+          </div>
+        </section>
+
+        <section class="content-card content-card--full">
           <div class="card-kicker">Governed Workflow Timeline</div>
           <h3 class="card-title">Runtime workflow progression</h3>
           <div class="timeline-grid">
@@ -326,7 +378,7 @@
               .map((item, index) =>
                 this.createTimelineStep(
                   String(index + 1).padStart(2, "0"),
-                  item.label + " • " + item.stateLabel,
+                  `${item.label} • ${item.stateLabel}`,
                   item.detail
                 )
               )
@@ -342,7 +394,7 @@
               .map((item, index) =>
                 this.createTimelineStep(
                   `E${index + 1}`,
-                  item.label + " • " + item.stateLabel,
+                  `${item.label} • ${item.stateLabel}`,
                   item.detail
                 )
               )
@@ -356,27 +408,28 @@
       const mount = document.querySelector(this.selectors.pageMount);
       if (!mount) return;
 
-      const instrument =
-        state.instruments.find((item) => item.instrumentId === "WP-TMP-104") || null;
-      const pattern = state.historicalPattern;
+      const instrument = state.instruments.find(
+        (item) => item.instrumentId === "WP-TMP-104"
+      );
 
       if (!instrument) return;
 
       mount.innerHTML = `
         <section class="grid grid--two">
           <article class="content-card">
-            <div class="card-kicker">Historical Pattern Runtime</div>
-            <h3 class="card-title">Drift and contextual interpretation</h3>
+            <div class="card-kicker">Live Risk Runtime</div>
+            <h3 class="card-title">Current bounded risk scoring</h3>
             ${this.createCheckList([
-              `Last Calibration: ${formatDateTime(instrument.lastCalibrationAt)}`,
-              `Last Administrative Outcome: ${formatLabel(pattern.lastCalibrationOutcome)}`,
-              `Drift Pattern Class: ${formatLabel(pattern.driftPatternClass)}`,
-              `Contextual Strengthening: ${pattern.contextualStrengthening ? "True" : "False"}`
+              `Risk Score: ${formatNumber(instrument.driftModel.currentRiskScore)}`,
+              `Risk Class: ${formatLabel(instrument.driftModel.currentRiskClass)}`,
+              `Temperature Weight: ${formatNumber(instrument.driftModel.environmentalWeighting.temperature, 2)}`,
+              `Humidity Weight: ${formatNumber(instrument.driftModel.environmentalWeighting.humidity, 2)}`,
+              `Pressure Weight: ${formatNumber(instrument.driftModel.environmentalWeighting.pressure, 2)}`
             ])}
           </article>
 
           <article class="content-card">
-            <div class="card-kicker">Instrument Summary Runtime</div>
+            <div class="card-kicker">Live Context Binding</div>
             <h3 class="card-title">Current instrument chain meaning</h3>
             ${this.createBoundaryList([
               `Observed State: ${formatLabel(instrument.observedState)}`,
@@ -406,7 +459,7 @@
               .map((item, index) =>
                 this.createTimelineStep(
                   `C${index + 1}`,
-                  item.label + " • " + item.statusLabel,
+                  `${item.label} • ${item.statusLabel}`,
                   item.description
                 )
               )
