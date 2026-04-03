@@ -86,6 +86,8 @@
         </div>
       </header>
 
+      <div data-wp-render="runtime-summary"></div>
+
       <section class="grid grid--three">
         <article class="metric-card metric-card--strong">
           <div class="metric-label">Workflow ID</div>
@@ -327,13 +329,26 @@
         </div>
       </section>
 
+      <div data-wp-render="page-mount"></div>
+      <div data-wp-render="simulation-controls"></div>
+      <div data-wp-render="export-controls"></div>
+
       <footer class="footer">
         <div class="footer-copy">
           WattsProtect™ Workflow Execution • Review Only • Governed Simulation • No implied
           validation, implementation, deployment, commercialization, or derivative rights
         </div>
+        <div class="footer-copy" data-wp-render="footer-runtime"></div>
       </footer>
     </main>
   </div>
+
+  <script src="./js/state.js"></script>
+  <script src="./js/app.js"></script>
+  <script src="./js/simulation.js"></script>
+  <script src="./js/workflow-engine.js"></script>
+  <script src="./js/evidence-engine.js"></script>
+  <script src="./js/export-engine.js"></script>
+  <script src="./js/render-engine.js"></script>
 </body>
 </html>
