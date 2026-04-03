@@ -32,7 +32,7 @@
   } = app;
 
   const renderEngine = {
-    version: "2.0.0",
+    version: "2.1.0",
     mode: "page_binding_and_rendering",
 
     selectors: {
@@ -179,6 +179,9 @@
       const lastUpdated = state.liveEnvironment.lastUpdatedAt
         ? formatDateTime(state.liveEnvironment.lastUpdatedAt)
         : "Unavailable";
+      const lastError = state.liveEnvironment.lastError
+        ? `Error: ${state.liveEnvironment.lastError}`
+        : "";
 
       mount.innerHTML = `
         <section class="content-card content-card--full">
@@ -194,7 +197,7 @@
               class="wp-text-input"
               data-wp-live-location-input="true"
               value="${safeText(currentLocation)}"
-              placeholder="Enter city, state"
+              placeholder="Enter ZIP code or city, state"
             />
             <button type="button" class="button" data-wp-live-refresh="true">
               Refresh Live Weather
@@ -213,6 +216,7 @@
           <p class="card-text">
             Live status: <strong>${safeText(formatLabel(state.liveEnvironment.status))}</strong><br />
             Last updated: <strong>${safeText(lastUpdated)}</strong>
+            ${lastError ? `<br /><span>${safeText(lastError)}</span>` : ""}
           </p>
         </section>
       `;
@@ -221,13 +225,22 @@
       const refreshButton = mount.querySelector("[data-wp-live-refresh='true']");
 
       if (refreshButton && input) {
-        refreshButton.addEventListener("click", async () => {
+        const runRefresh = async () => {
           refreshButton.disabled = true;
           refreshButton.textContent = "Refreshing...";
           await liveEnvironment.refresh(input.value.trim());
           refreshButton.disabled = false;
           refreshButton.textContent = "Refresh Live Weather";
           this.refresh();
+        };
+
+        refreshButton.addEventListener("click", runRefresh);
+
+        input.addEventListener("keydown", async (event) => {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            await runRefresh();
+          }
         });
       }
 
