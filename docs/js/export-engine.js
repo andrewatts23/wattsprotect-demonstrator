@@ -5,20 +5,20 @@
   const simulation = window.WP_DEMO_SIMULATION;
   const workflowEngine = window.WP_DEMO_WORKFLOW;
   const evidenceEngine = window.WP_DEMO_EVIDENCE;
+  const state = window.WP_DEMO_STATE;
 
-  if (!app || !simulation || !workflowEngine || !evidenceEngine) {
+  if (!app || !simulation || !workflowEngine || !evidenceEngine || !state) {
     console.error("WattsProtect™ export engine dependencies are unavailable.");
     return;
   }
 
-  const { state, formatLabel, formatDateTime } = app;
+  const { formatLabel, formatDateTime } = app;
 
   const createTimestamp = () => new Date().toISOString();
-
   const prettyJson = (value) => JSON.stringify(value, null, 2);
 
   const exportEngine = {
-    version: "1.0.0",
+    version: "2.0.0",
     mode: "bounded_audit_export_simulation",
 
     getRepositoryHeader() {
@@ -33,7 +33,8 @@
 
     getPrimaryPackageMeta() {
       const evidence = state.evidence;
-      const workflow = state.workflows.find((item) => item.workflowId === "WF-104-REV-01") || null;
+      const workflow =
+        state.workflows.find((item) => item.workflowId === "WF-104-REV-01") || null;
       const instrument =
         state.instruments.find((item) => item.instrumentId === "WP-TMP-104") || null;
 
@@ -47,30 +48,50 @@
       };
     },
 
-    buildAuditReviewPackage() {
-      const packageMeta = this.getPrimaryPackageMeta();
-      const repositoryHeader = this.getRepositoryHeader();
-      const simulationSnapshot = simulation.summarizeCurrentState();
-      const workflowSnapshot = workflowEngine.serialize();
-      const evidenceSnapshot = evidenceEngine.serialize();
-
+    buildLiveEnvironmentSummary() {
       return {
-        header: repositoryHeader,
-        packageMeta,
+        provider: state.liveEnvironment.provider,
+        status: state.liveEnvironment.status,
+        activeLocation: state.liveEnvironment.activeLocation,
+        lastUpdatedAt: state.liveEnvironment.lastUpdatedAt,
+        lastError: state.liveEnvironment.lastError,
+        units: state.liveEnvironment.units,
+        baseline: state.environmentalWindow.baseline,
+        current: {
+          temperatureF: state.environmentalWindow.signals.temperatureF.current,
+          humidityRh: state.environmentalWindow.signals.humidityRh.current,
+          pressureHpa: state.environmentalWindow.signals.pressureHpa.current
+        },
+        deltas: {
+          temperatureF: state.environmentalWindow.signals.temperatureF.baselineDelta,
+          humidityRh: state.environmentalWindow.signals.humidityRh.baselineDelta,
+          pressureHpa: state.environmentalWindow.signals.pressureHpa.baselineDelta
+        },
+        classification: state.environmentalWindow.classification,
+        interpretation: state.environmentalWindow.interpretation
+      };
+    },
+
+    buildAuditReviewPackage() {
+      return {
+        header: this.getRepositoryHeader(),
+        packageMeta: this.getPrimaryPackageMeta(),
         packageBoundary: {
           classification: "review_only_bounded_export",
           statement:
-            "This export package is a governed simulation of architecture behavior and is not represented as validated predictive performance, live regulated deployment, implementation authorization, or commercialization permission."
+            "This export package is a governed simulation of architecture behavior with live contextual ingestion and is not represented as validated predictive performance, live regulated deployment, implementation authorization, or commercialization permission."
         },
+        liveEnvironment: this.buildLiveEnvironmentSummary(),
         scenarioSummary: {
           title: state.activeScenario.title,
           summary: state.activeScenario.summary,
           phase: formatLabel(state.activeScenario.phase),
-          reviewWindowHours: state.activeScenario.reviewWindowHours
+          reviewWindowHours: state.activeScenario.reviewWindowHours,
+          mode: formatLabel(state.activeScenario.mode)
         },
-        operationalSnapshot: simulationSnapshot,
-        workflowSnapshot,
-        evidenceSnapshot
+        operationalSnapshot: simulation.summarizeCurrentState(),
+        workflowSnapshot: workflowEngine.serialize(),
+        evidenceSnapshot: evidenceEngine.serialize()
       };
     },
 
@@ -94,6 +115,7 @@
           escalatedEvents: state.metrics.escalatedEvents,
           evidenceIncompleteEvents: state.metrics.evidenceIncompleteEvents
         },
+        liveEnvironment: this.buildLiveEnvironmentSummary(),
         focalEvent: {
           instrumentId: activeInstrument ? activeInstrument.instrumentId : "Unavailable",
           predictedState: activeInstrument ? formatLabel(activeInstrument.predictedState) : "Unavailable",
@@ -122,6 +144,7 @@
           statement:
             "This package supports bounded review of architecture behavior and does not constitute completed validation, GMP qualification, TEVV completion, or production readiness."
         },
+        liveEnvironment: this.buildLiveEnvironmentSummary(),
         controls: {
           scenarioPhase: formatLabel(state.activeScenario.phase),
           closureBlocked: workflow.workflow ? workflow.workflow.closureBlocked : true,
@@ -157,11 +180,14 @@
           result: evidence ? evidence.result : "Unavailable"
         },
         context: {
+          location: environment.location,
           classification: formatLabel(environment.classification),
           temperatureCurrent: environment.signals.temperatureF.current,
           temperatureDelta: environment.signals.temperatureF.baselineDelta,
           humidityCurrent: environment.signals.humidityRh.current,
-          humidityDelta: environment.signals.humidityRh.baselineDelta
+          humidityDelta: environment.signals.humidityRh.baselineDelta,
+          pressureCurrent: environment.signals.pressureHpa.current,
+          pressureDelta: environment.signals.pressureHpa.baselineDelta
         }
       };
     },
@@ -194,7 +220,10 @@
       return prettyJson(this.serializePackage(packageClass));
     },
 
-    downloadJson(filename = "wattsprotect_audit_review_package.json", packageClass = "audit_review_package") {
+    downloadJson(
+      filename = "wattsprotect_audit_review_package.json",
+      packageClass = "audit_review_package"
+    ) {
       const payload = this.serializePretty(packageClass);
       const blob = new Blob([payload], { type: "application/json;charset=utf-8" });
       const url = URL.createObjectURL(blob);
@@ -233,6 +262,8 @@
         "Instrument ID: " + instrumentId,
         "Workflow ID: " + workflowId,
         "Scenario Phase: " + phase,
+        "Live Location: " + (state.liveEnvironment.activeLocation.label || "Unavailable"),
+        "Live Updated At: " + formatDateTime(state.liveEnvironment.lastUpdatedAt),
         "Chain Status: " + chainStatus,
         "Boundary: " + pkg.packageBoundary.statement
       ].join("\n");
