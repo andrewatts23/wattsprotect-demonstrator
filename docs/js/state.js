@@ -2,27 +2,61 @@ window.WP_DEMO_STATE = {
   repository: {
     systemName: "WattsProtect™",
     edition: "Canonical Review-Only Demonstrator",
-    posture: "Governed Simulation",
+    posture: "Governed Simulation with Live Context",
     rights: "All rights reserved",
     boundary:
       "No claim may exceed implemented, tested, validated, and released reality."
+  },
+
+  runtime: {
+    environmentMode: "live_context",
+    autoRefreshMinutes: 10,
+    lastUiRefreshAt: null
   },
 
   activeScenario: {
     scenarioId: "SCN-WP-104-ENV-01",
     title: "Environmental Shift → Threshold-Proximate Review Event",
     summary:
-      "Humidity rises above recent baseline while temperature remains elevated across the monitored window, strengthening review significance for WP-TMP-104.",
+      "Live weather context is ingested from an external weather source and mapped into a bounded demonstrator showing how environmental movement can strengthen review significance for WP-TMP-104.",
     status: "active",
-    phase: "review_pending",
+    phase: "baseline",
     reviewWindowHours: 6
   },
 
   metrics: {
     monitoredInstruments: 12,
-    openWorkflowEvents: 3,
-    escalatedEvents: 1,
-    evidenceIncompleteEvents: 1
+    openWorkflowEvents: 1,
+    escalatedEvents: 0,
+    evidenceIncompleteEvents: 0
+  },
+
+  liveEnvironment: {
+    enabled: true,
+    provider: "Open-Meteo",
+    status: "idle",
+    query: "New Brunswick, NJ",
+    resolvedName: "New Brunswick, NJ",
+    latitude: null,
+    longitude: null,
+    timezone: null,
+    lastUpdatedAt: null,
+    error: null,
+    current: {
+      temperatureF: null,
+      humidityRh: null,
+      pressureHpa: null
+    },
+    baselines: {
+      temperatureF: 72.0,
+      humidityRh: 56,
+      pressureHpa: 1013
+    },
+    deltas: {
+      temperatureF: 0,
+      humidityRh: 0,
+      pressureHpa: 0
+    }
   },
 
   instruments: [
@@ -33,11 +67,11 @@ window.WP_DEMO_STATE = {
       location: "Controlled Monitoring Zone B-14",
       operationalDomain: "Quality-Sensitive Monitoring Layer",
       observedState: "active",
-      predictedState: "threshold_proximate",
-      thresholdProximityClass: "review_worthy",
-      confidenceClass: "reviewable",
-      workflowState: "review_pending",
-      evidenceState: "incomplete",
+      predictedState: "stable",
+      thresholdProximityClass: "normal",
+      confidenceClass: "normal",
+      workflowState: "none_open",
+      evidenceState: "not_required",
       lastCalibrationAt: "2026-03-11T09:32:00",
       currentReviewWindowHours: 6,
       assignedRolePath: [
@@ -46,7 +80,7 @@ window.WP_DEMO_STATE = {
         "QA Review"
       ],
       summary:
-        "Primary monitored instrument in the active scenario. Historical drift posture and current contextual strengthening have moved this instrument into threshold-proximate review posture."
+        "Primary monitored instrument in the active scenario. Live contextual movement can strengthen review significance for this instrument."
     },
     {
       instrumentId: "WP-PRS-220",
@@ -74,10 +108,10 @@ window.WP_DEMO_STATE = {
       classification: "Environmental Humidity Monitor",
       location: "Controlled Monitoring Zone B-14",
       operationalDomain: "Context-Signal Layer",
-      observedState: "elevated",
-      predictedState: "elevated_contextual",
-      thresholdProximityClass: "contextual",
-      confidenceClass: "high",
+      observedState: "stable",
+      predictedState: "stable",
+      thresholdProximityClass: "normal",
+      confidenceClass: "normal",
       workflowState: "supporting_signal_only",
       evidenceState: "available_for_linkage",
       lastCalibrationAt: "2026-03-19T10:04:00",
@@ -111,44 +145,45 @@ window.WP_DEMO_STATE = {
   ],
 
   environmentalWindow: {
-    windowId: "ENV-WIN-B14-2026-04-03-A",
+    windowId: "ENV-WIN-B14-LIVE-01",
     location: "Controlled Monitoring Zone B-14",
-    classification: "elevated_environmental_concern",
+    classification: "reviewable_environmental_shift",
     startAt: "2026-04-03T06:00:00",
     endAt: "2026-04-03T12:00:00",
     signals: {
       temperatureF: {
-        current: 76.8,
-        baselineDelta: 4.2,
-        state: "elevated",
+        current: 72.0,
+        baselineDelta: 0,
+        state: "stable",
         summary:
-          "Temperature remains elevated above recent baseline across the active review interval."
+          "Temperature baseline established for bounded contextual demonstration."
       },
       humidityRh: {
-        current: 67,
-        baselineDelta: 11,
-        state: "elevated",
+        current: 56,
+        baselineDelta: 0,
+        state: "stable",
         summary:
-          "Humidity has risen above recent baseline and remained elevated through the rolling review window."
+          "Humidity baseline established for bounded contextual demonstration."
       },
       pressureBand: {
         current: "stable_relative_band",
+        baselineDelta: 0,
         state: "stable",
         summary:
-          "Pressure remains inside stable relative band and is not a dominant anomaly driver in the current event."
+          "Pressure remains inside stable relative band and is not yet a dominant anomaly driver."
       }
     },
     interpretation:
-      "Environmental movement is not treated as calibration truth. It is treated as contextual strengthening that increases review significance for the monitored event."
+      "Environmental movement is not treated as calibration truth. It is treated as contextual strengthening that may increase review significance for the monitored event."
   },
 
   historicalPattern: {
     instrumentId: "WP-TMP-104",
     lastCalibrationOutcome: "acceptable_administrative_outcome",
     driftPatternClass: "minor_directional_drift",
-    contextualStrengthening: true,
+    contextualStrengthening: false,
     interpretation:
-      "Historical behavior alone was not sufficient to force intervention. Under the present environmental window, the same pattern becomes review-worthy."
+      "Historical behavior alone is not sufficient to force intervention. When live contextual movement strengthens the event, the same pattern can become review-worthy."
   },
 
   alerts: [
@@ -157,17 +192,17 @@ window.WP_DEMO_STATE = {
       type: "predictive_review_alert",
       instrumentId: "WP-TMP-104",
       severity: "review_worthy",
-      status: "open",
+      status: "available",
       routedTo: "Technician / Metrology",
       summary:
-        "Threshold-proximate posture detected under elevated humidity and sustained temperature divergence."
+        "Predictive review alert becomes active when contextual concern and historical pattern support governed review."
     },
     {
       alertId: "ALT-WP-104-EVD-01",
       type: "evidence_completion_hold",
       instrumentId: "WP-TMP-104",
       severity: "control_hold",
-      status: "open",
+      status: "available",
       routedTo: "Workflow Closure Gate",
       summary:
         "Event closure remains blocked until condition, decision, actor, action, and result are all preserved."
@@ -206,13 +241,13 @@ window.WP_DEMO_STATE = {
     workflowId: "WF-104-REV-01",
     chainStatus: "preserved_reviewable",
     condition:
-      "Elevated humidity and sustained temperature divergence strengthened contextual concern while the instrument moved into threshold-proximate posture.",
+      "Live environmental context is evaluated in bounded form to determine whether the active instrument has moved into review-worthy posture.",
     decision:
-      "A governed review event was opened rather than allowing the condition to remain passive awareness.",
+      "A governed review event is opened when contextual movement and historical pattern justify review significance.",
     actor:
       "Technician / Metrology role assigned as initial attributable responder.",
     action:
-      "Review path opened under workflow control with escalation, override, and evidence gates preserved.",
+      "Review path opens under workflow control with escalation, override, and evidence gates preserved.",
     result:
       "Event remains reviewable and export-ready because the chain preserves condition, decision, actor, action, and result.",
     exportClass: "audit_review_package"
