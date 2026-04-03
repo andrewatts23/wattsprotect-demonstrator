@@ -20,7 +20,6 @@
     elevated_contextual: "Elevated / Contextual",
     contextual: "Contextual",
     high: "High",
-    supportিং_signal_only: "Supporting Signal Only",
     supporting_signal_only: "Supporting Signal Only",
     incomplete: "Incomplete",
     available_for_linkage: "Available for Linkage",
@@ -31,8 +30,20 @@
     acceptable_administrative_outcome: "Acceptable Administrative Outcome",
     minor_directional_drift: "Minor Directional Drift",
     elevated_environmental_concern: "Elevated Environmental Concern",
+    reviewable_environmental_shift: "Reviewable Environmental Shift",
+    significant_concern: "Significant Concern",
     stable_relative_band: "Stable Relative Band",
-    audit_review_package: "Audit Review Package"
+    audit_review_package: "Audit Review Package",
+    escalated_review: "Escalated Review",
+    evidence_hold: "Evidence Hold",
+    export_ready: "Export Ready",
+    complete: "Complete",
+    blocked: "Blocked",
+    released: "Released",
+    resolved: "Resolved",
+    open: "Open",
+    available: "Available",
+    governed_workflow_action: "Governed Workflow Action"
   };
 
   const PAGE_IDS = new Set([
