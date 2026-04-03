@@ -11,12 +11,23 @@
 
   const { formatNumber, formatSignedNumber } = app;
 
+  const ZIP_API_BASE = "https://api.zippopotam.us";
   const GEOCODE_URL = "https://geocoding-api.open-meteo.com/v1/search";
   const WEATHER_URL = "https://api.open-meteo.com/v1/forecast";
 
-  const createTimestamp = () => new Date().toISOString();
+  const DEFAULT_COUNTRY = "us";
 
+  const createTimestamp = () => new Date().toISOString();
   const toFahrenheit = (celsius) => (celsius * 9) / 5 + 32;
+
+  const normalizeLocationInput = (value) => String(value || "").trim();
+
+  const isZipLikeInput = (value) => {
+    const normalized = normalizeLocationInput(value);
+    return /^[A-Za-z0-9][A-Za-z0-9\s-]{2,10}$/.test(normalized) &&
+      /[0-9]/.test(normalized) &&
+      !normalized.includes(",");
+  };
 
   const buildPressureState = (delta) => {
     if (Math.abs(delta) >= 6) {
@@ -53,11 +64,51 @@
   };
 
   const liveEnvironment = {
-    version: "1.0.0",
-    mode: "live_environment_ingestion",
+    version: "1.3.0",
+    mode: "zip_or_place_live_environment_ingestion",
 
-    async geocodeLocation(label) {
-      const url = `${GEOCODE_URL}?name=${encodeURIComponent(label)}&count=1&language=en&format=json`;
+    async lookupByPostalCode(postalCode, countryCode = DEFAULT_COUNTRY) {
+      const normalizedPostalCode = normalizeLocationInput(postalCode);
+      const normalizedCountry = String(countryCode || DEFAULT_COUNTRY).toLowerCase();
+
+      const response = await fetch(
+        `${ZIP_API_BASE}/${encodeURIComponent(normalizedCountry)}/${encodeURIComponent(normalizedPostalCode)}`
+      );
+
+      if (!response.ok) {
+        throw new Error("No ZIP/postal code match found.");
+      }
+
+      const data = await response.json();
+
+      if (!data.places || !data.places.length) {
+        throw new Error("ZIP/postal code lookup returned no coordinates.");
+      }
+
+      const place = data.places[0];
+
+      return {
+        label: [
+          place["place name"],
+          place.state,
+          data.country
+        ].filter(Boolean).join(", "),
+        latitude: Number(place.latitude),
+        longitude: Number(place.longitude),
+        timezone: state.liveEnvironment.defaultLocation.timezone
+      };
+    },
+
+    async geocodePlace(query) {
+      const normalizedQuery = normalizeLocationInput(query);
+
+      if (!normalizedQuery) {
+        throw new Error("No location input provided.");
+      }
+
+      const url =
+        `${GEOCODE_URL}?name=${encodeURIComponent(normalizedQuery)}&count=1&language=en&format=json`;
+
       const response = await fetch(url);
 
       if (!response.ok) {
@@ -78,6 +129,29 @@
         longitude: first.longitude,
         timezone: first.timezone || state.liveEnvironment.defaultLocation.timezone
       };
+    },
+
+    async resolveLocation(inputValue) {
+      const normalized = normalizeLocationInput(inputValue);
+
+      if (!normalized) {
+        return {
+          label: state.liveEnvironment.defaultLocation.label,
+          latitude: state.liveEnvironment.defaultLocation.latitude,
+          longitude: state.liveEnvironment.defaultLocation.longitude,
+          timezone: state.liveEnvironment.defaultLocation.timezone
+        };
+      }
+
+      if (isZipLikeInput(normalized)) {
+        try {
+          return await this.lookupByPostalCode(normalized, DEFAULT_COUNTRY);
+        } catch (zipError) {
+          return await this.geocodePlace(normalized);
+        }
+      }
+
+      return await this.geocodePlace(normalized);
     },
 
     async fetchCurrentWeather(latitude, longitude, timezone) {
@@ -161,34 +235,35 @@
         "Live environmental movement is not treated as calibration truth. It is treated as contextual strengthening that increases review significance for the monitored event.";
     },
 
-    async refresh(locationLabel) {
-      const targetLabel =
-        locationLabel ||
-        state.liveEnvironment.activeLocation.label ||
-        state.liveEnvironment.defaultLocation.label;
+    async refresh(locationInput) {
+      const normalizedInput = normalizeLocationInput(locationInput);
 
       state.liveEnvironment.status = "loading";
       state.liveEnvironment.lastError = null;
       state.environmentalWindow.source.fetchStatus = "loading";
 
       try {
-        const location = await this.geocodeLocation(targetLabel);
+        const location = await this.resolveLocation(normalizedInput);
         const weather = await this.fetchCurrentWeather(
           location.latitude,
           location.longitude,
           location.timezone
         );
 
-        this.applyLiveWeather({
-          location,
-          weather
-        });
+        this.applyLiveWeather({ location, weather });
 
         if (
           window.WP_DEMO_SIMULATION &&
           typeof window.WP_DEMO_SIMULATION.syncWithLiveEnvironment === "function"
         ) {
           window.WP_DEMO_SIMULATION.syncWithLiveEnvironment();
+        }
+
+        if (
+          window.WP_DEMO_RENDER &&
+          typeof window.WP_DEMO_RENDER.refresh === "function"
+        ) {
+          window.WP_DEMO_RENDER.refresh();
         }
 
         return {
@@ -200,6 +275,13 @@
         state.liveEnvironment.status = "error";
         state.liveEnvironment.lastError = error.message || "Unknown live weather error.";
         state.environmentalWindow.source.fetchStatus = "error";
+
+        if (
+          window.WP_DEMO_RENDER &&
+          typeof window.WP_DEMO_RENDER.refresh === "function"
+        ) {
+          window.WP_DEMO_RENDER.refresh();
+        }
 
         return {
           ok: false,
@@ -218,7 +300,7 @@
       }
 
       this._intervalId = setInterval(() => {
-        this.refresh();
+        this.refresh(state.liveEnvironment.activeLocation.label);
       }, state.liveEnvironment.refreshIntervalMs);
     },
 
