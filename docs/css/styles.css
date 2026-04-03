@@ -229,8 +229,11 @@ h4 {
   border-radius: var(--radius-sm);
   color: var(--color-text-soft);
   background: transparent;
-  transition: background-color 160ms ease, border-color 160ms ease,
-    color 160ms ease, transform 160ms ease;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
 }
 
 .nav-link:hover,
@@ -430,7 +433,10 @@ h4 {
   font-weight: 700;
   line-height: 1;
   box-shadow: 0 10px 22px rgba(15, 38, 88, 0.32);
-  transition: transform 160ms ease, filter 160ms ease, border-color 160ms ease;
+  transition:
+    transform 160ms ease,
+    filter 160ms ease,
+    border-color 160ms ease;
 }
 
 .button:hover,
@@ -723,6 +729,26 @@ h4 {
 
 .proof-arrow--down {
   padding-left: 0.6rem;
+}
+
+/* =========================
+   Export preview
+   ========================= */
+
+.wp-json-preview {
+  margin-top: var(--space-5);
+  padding: var(--space-5);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--color-text-soft);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 420px;
 }
 
 /* =========================
