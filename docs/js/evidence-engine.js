@@ -4,18 +4,19 @@
   const app = window.WP_DEMO_APP;
   const simulation = window.WP_DEMO_SIMULATION;
   const workflowEngine = window.WP_DEMO_WORKFLOW;
+  const state = window.WP_DEMO_STATE;
 
-  if (!app || !simulation || !workflowEngine) {
+  if (!app || !simulation || !workflowEngine || !state) {
     console.error("WattsProtect™ evidence engine dependencies are unavailable.");
     return;
   }
 
-  const { state, formatLabel } = app;
+  const { formatLabel } = app;
 
   const createTimestamp = () => new Date().toISOString();
 
   const evidenceEngine = {
-    version: "1.0.0",
+    version: "2.0.0",
     mode: "evidence_preservation_simulation",
 
     getEvidenceObject() {
@@ -53,10 +54,13 @@
         instrumentPredictedState: formatLabel(instrument.predictedState),
         thresholdClass: formatLabel(instrument.thresholdProximityClass),
         contextClassification: formatLabel(environment.classification),
+        location: environment.location,
         temperatureCurrent: environment.signals.temperatureF.current,
         temperatureDelta: environment.signals.temperatureF.baselineDelta,
         humidityCurrent: environment.signals.humidityRh.current,
-        humidityDelta: environment.signals.humidityRh.baselineDelta
+        humidityDelta: environment.signals.humidityRh.baselineDelta,
+        pressureCurrent: environment.signals.pressureHpa.current,
+        pressureDelta: environment.signals.pressureHpa.baselineDelta
       };
     },
 
@@ -192,17 +196,11 @@
         return null;
       }
 
-      evidence.condition =
-        payload.condition || evidence.condition;
-      evidence.decision =
-        payload.decision || evidence.decision;
-      evidence.actor =
-        payload.actor || evidence.actor;
-      evidence.action =
-        payload.action || evidence.action;
-      evidence.result =
-        payload.result || evidence.result;
-
+      evidence.condition = payload.condition || evidence.condition;
+      evidence.decision = payload.decision || evidence.decision;
+      evidence.actor = payload.actor || evidence.actor;
+      evidence.action = payload.action || evidence.action;
+      evidence.result = payload.result || evidence.result;
       evidence.chainStatus = "preserved_reviewable";
 
       instrument.evidenceState = "available_for_linkage";
@@ -240,6 +238,7 @@
       const workflow = this.getPrimaryWorkflow();
       const instrument = this.getPrimaryInstrument();
       const environment = this.getEnvironmentalWindow();
+      const live = state.liveEnvironment;
 
       if (!evidence || !workflow || !instrument || !environment) {
         return null;
@@ -248,8 +247,7 @@
       return {
         title: "WattsProtect™ Audit Review Narrative",
         narrative:
-          instrument.instrumentId +
-          " entered governed review after elevated humidity and sustained temperature divergence strengthened contextual concern and moved the instrument into threshold-proximate posture. The event was converted from predictive signal into governed workflow, attributed to a named reviewing role, preserved through explicit evidence checkpoints, and rendered into bounded audit-ready form.",
+          `${instrument.instrumentId} entered governed review after live environmental context from ${live.activeLocation.label} strengthened contextual concern and moved the instrument into threshold-proximate posture under bounded demonstrator logic. The event was converted from predictive signal into governed workflow, attributed to a named reviewing role, preserved through explicit evidence checkpoints, and rendered into bounded audit-ready form.`,
         environmentalSummary: environment.interpretation,
         workflowSummary: workflow.summary,
         evidenceSummary: evidence.result
@@ -259,19 +257,18 @@
     buildEvidenceTimeline() {
       const evidence = this.getEvidenceObject();
       const workflow = this.getPrimaryWorkflow();
-      const instrument = this.getPrimaryInstrument();
 
-      if (!evidence || !workflow || !instrument) {
+      if (!evidence || !workflow) {
         return [];
       }
 
       return [
         {
           stepId: "EV-STEP-01",
-          label: "Condition Preserved",
+          label: "Live Context Preserved",
           state: evidence.condition ? "complete" : "incomplete",
           detail:
-            "Contextual movement and instrument threshold posture preserved as explicit condition."
+            "Live environmental movement and instrument threshold posture preserved as explicit condition."
         },
         {
           stepId: "EV-STEP-02",
