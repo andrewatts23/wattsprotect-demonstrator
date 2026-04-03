@@ -1,0 +1,256 @@
+WATTSPROTECT™ DEMONSTRATOR REPOSITORY LICENSE
+REVIEW-ONLY • RIGHTS RESERVED • NO IMPLEMENTATION RIGHTS • NO DERIVATIVE RIGHTS
+
+Author / Rights Holder: Andre Jason Watts
+Repository Class: Canonical Review-Only Demonstrator
+Applies To: Entire repository, including without limitation all code, UI structure, markup, stylesheets,
+scripts, mock data, workflow representations, evidence representations, export representations,
+documentation, diagrams, text, arrangement, structure, and all protected combinations therein.
+
+IMPORTANT READING RULE
+
+This repository is not open source in the ordinary sense.
+This repository is not released under MIT, Apache, GPL, BSD, Creative Commons, or any permissive,
+copyleft, or collaborative engineering license.
+
+This repository is provided for controlled review, bounded demonstration, category-proof presentation,
+authorship fixation, and rights reservation only.
+
+By accessing, viewing, reading, downloading, cloning, copying, studying, or otherwise interacting with
+this repository, you agree that your use is limited to the narrow permissions expressly stated below.
+
+If you do not agree to these terms, do not use this repository.
+
+1. DEFINITIONS
+
+“Repository” means this entire repository and every file, screen, code artifact, dataset, mock object,
+workflow representation, evidence representation, export representation, text, structure, arrangement,
+and protected combination contained within it.
+
+“WattsProtect™” means the original predictive calibration-integrity, workflow-governance, and
+evidence-preservation architecture authored by Andre Jason Watts, including protected logic,
+architecture selection, architecture arrangement, system identity, module structure, taxonomy,
+workflow-governance logic, predictive logic, access-control logic, attribution logic,
+environmental-correlation logic, evidence-preservation logic, audit-meaning logic, schema structures,
+deployment-boundary logic, validation-boundary logic, and all materially integrated combinations
+thereof.
+
+“Review Use” means passive reading, passive viewing, bounded internal evaluation, category-proof review,
+authorship assessment, institutional intake review, reviewer discussion, or non-implementing technical
+assessment performed solely for understanding what is being demonstrated.
+
+“Derivative Work” means any work, architecture, software, system, module, product, service,
+documentation, design, model, workflow, implementation, interface, schema, internal tool, roadmap,
+or substitute system that is based on, adapted from, materially derived from, functionally patterned
+on, structurally patterned on, decomposed from, renamed from, abstracted from, reverse-engineered
+from, or accelerated by this Repository or WattsProtect™.
+
+“Implement” means to build, emulate, port, operationalize, productize, deploy, integrate,
+commercialize, field, or otherwise convert the Repository or WattsProtect™ into a functioning system
+or materially functioning subsystem.
+
+2. OWNERSHIP
+
+All rights, title, and interest in and to the Repository and WattsProtect™ are owned and retained by
+Andre Jason Watts.
+
+No transfer of copyright, trade secret interest, authorship position, implementation right,
+commercialization right, derivative right, or other ownership interest occurs by reason of public
+access, viewing, reading, download, cloning, or review.
+
+All rights not expressly granted in this License are reserved.
+
+3. LIMITED PERMISSION GRANTED
+
+Subject to full compliance with this License, you are granted a narrow, revocable,
+non-exclusive, non-transferable, non-sublicensable permission to:
+
+a. access the Repository;
+b. read and view the Repository;
+c. download or clone the Repository solely for Review Use;
+d. internally circulate the Repository solely for Review Use;
+e. discuss the Repository solely for Review Use; and
+f. run the demonstrator solely in bounded review form, without modification and without any
+implementation, commercialization, or derivative-development purpose.
+
+No other permission is granted.
+
+4. EXPRESSLY PROHIBITED USES
+
+You may not, and no permission is granted to:
+
+a. Implement WattsProtect™ or any materially derived architecture;
+b. create Derivative Works;
+c. modify the Repository for implementation, commercialization, integration, or productization;
+d. use the Repository to seed internal product design;
+e. use the Repository to accelerate parallel development;
+f. use the Repository to prepare substitute architectures;
+g. reverse-engineer protected logic or protected combinations;
+h. decompose the architecture into separately commercialized fragments;
+i. reframe the Repository into implementation-ready specifications;
+j. convert review artifacts into engineering requirements for build purposes;
+k. use the Repository or WattsProtect™ for benchmark-to-build activity;
+l. use the Repository as a basis for pilot, field use, deployment, or operational integration;
+m. sublicense, redistribute for build purposes, or resell the Repository;
+n. remove, obscure, or alter authorship notices, rights notices, or boundary notices;
+o. claim independent origin over substantially similar structures, arrangements, theories of
+operation, workflow forms, combinations, or protected system classes materially derived from the
+Repository;
+p. use the Repository or WattsProtect™ in any way that exceeds Review Use.
+
+Any use outside the narrow permissions stated in Section 3 is prohibited.
+
+5. NO DERIVATIVE RIGHTS
+
+No right to prepare Derivative Works is granted.
+
+No right to modify for implementation is granted.
+
+No right to adapt for productization is granted.
+
+No right to rename, restructure, modularize, recast, abstract, decompose, restyle, repurpose, or
+translate the protected architecture into materially similar functioning systems is granted.
+
+Any such attempt exceeds the License and is unauthorized.
+
+6. NO IMPLEMENTATION RIGHTS
+
+No implementation right is granted.
+
+No deployment right is granted.
+
+No commercialization right is granted.
+
+No integration right is granted.
+
+No productization right is granted.
+
+No pilot right is granted.
+
+No field-use right is granted.
+
+No internal-use right for operational implementation is granted.
+
+No technical completeness, code presence, UI coherence, demonstrator realism, or repository visibility
+shall be interpreted as granting implementation rights.
+
+Review is authorized.
+Implementation is not.
+
+7. NO OPEN-SOURCE STATUS
+
+The Repository is not open source in the permissive or copyleft sense.
+
+No public availability of code, text, UI, workflow representation, mock data, or documentation shall be
+interpreted as dedication to the public, grant of broad reuse permission, or abandonment of rights.
+
+The Repository is rights-reserved and review-only.
+
+8. AUTHORIZED RUNNING OF THE DEMONSTRATOR
+
+You may run the Repository solely for bounded Review Use, subject to all of the following conditions:
+
+a. the demonstrator is run only in review-safe form;
+b. no modification is made for implementation or derivative development;
+c. no output is used to seed implementation planning;
+d. no output is used to justify productization or deployment;
+e. no output is used to accelerate materially similar build efforts; and
+f. all authorship, boundary, and rights notices remain intact.
+
+Running the demonstrator does not grant any right to build what it demonstrates.
+
+9. ATTRIBUTION AND AUTHORSHIP INTEGRITY
+
+Any authorized reference to the Repository or WattsProtect™ must preserve attribution to Andre Jason Watts.
+
+You may not remove, obscure, fragment, dilute, misstate, anonymize, or reclassify authorship,
+origin, rights reservation, or architectural identity.
+
+No person or entity may claim or imply that WattsProtect™ or the Repository is institution-originated,
+jointly originated, anonymously originated, or spontaneously emergent from review activity.
+
+10. BOUNDED SIMULATION RULE
+
+The Repository contains a governed simulation of architecture behavior.
+
+No simulation element may be interpreted as proof of:
+
+a. validated predictive accuracy;
+b. real calibration truth;
+c. real instrument physics;
+d. GMP-qualified operation;
+e. field-proven operational reliability;
+f. regulator acceptance;
+g. production readiness; or
+h. implementation authorization.
+
+The narrower and more truthful reading always controls.
+
+11. NO WARRANTY
+
+THE REPOSITORY IS PROVIDED “AS IS,” “AS AVAILABLE,” AND WITH ALL FAULTS FOR REVIEW PURPOSES ONLY.
+
+TO THE MAXIMUM EXTENT PERMITTED BY LAW, THE AUTHOR / RIGHTS HOLDER DISCLAIMS ALL WARRANTIES,
+EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+PARTICULAR PURPOSE, NON-INFRINGEMENT, ACCURACY, COMPLETENESS, OPERATIONAL SUITABILITY, VALIDATED
+PERFORMANCE, DEPLOYMENT READINESS, OR FITNESS FOR IMPLEMENTATION.
+
+No reviewer, reader, institution, or other user may rely on the Repository as validated operational
+truth or implementation-authorized engineering guidance.
+
+12. LIMITATION OF LIABILITY
+
+TO THE MAXIMUM EXTENT PERMITTED BY LAW, IN NO EVENT SHALL THE AUTHOR / RIGHTS HOLDER BE LIABLE FOR
+ANY CLAIM, DAMAGES, LOSSES, LIABILITIES, COSTS, OR EXPENSES ARISING FROM OR RELATED TO USE,
+MISUSE, INTERPRETATION, MISINTERPRETATION, COPYING, MODIFICATION, DERIVATION, IMPLEMENTATION
+ATTEMPT, OR UNAUTHORIZED RELIANCE ON THE REPOSITORY.
+
+This limitation applies whether the claim is based in contract, tort, negligence, strict liability,
+statute, equity, or otherwise.
+
+13. TERMINATION
+
+Any use of the Repository outside the permissions stated in Section 3 automatically terminates this
+License immediately and without notice.
+
+Upon termination, all unauthorized use must cease immediately.
+
+Termination does not waive any right, claim, remedy, protection, or enforcement position available to
+the Author / Rights Holder.
+
+14. NO WAIVER
+
+No public visibility, no silence, no failure to object, no technical completeness, no repository
+access, and no review circulation shall constitute waiver of any right, boundary, restriction, or
+reservation under this License.
+
+15. GOVERNING INTERPRETATION RULE
+
+If any reading of the Repository or this License would broaden permissions beyond:
+
+a. Review Use only;
+b. no implementation rights;
+c. no derivative rights;
+d. no commercialization rights; and
+e. preserved authorship and rights reservation,
+
+that broader reading is invalid.
+
+The narrower and more truthful reading controls.
+
+16. SEVERABILITY
+
+If any provision of this License is held unenforceable, invalid, or ineffective, the remainder shall
+remain in full force to the maximum extent permitted by law, and the unenforceable portion shall be
+interpreted as narrowly as necessary to preserve the Author / Rights Holder’s intended boundary.
+
+17. ENTIRE LICENSE
+
+This License, together with the Repository’s NOTICE.md and BOUNDARY.md documents, states the complete
+license posture governing the Repository unless and until a separately executed written instrument
+signed by Andre Jason Watts states otherwise.
+
+AUTHOR / RIGHTS HOLDER
+
+Andre Jason Watts
+All rights reserved.
