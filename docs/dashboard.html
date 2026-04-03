@@ -9,7 +9,7 @@
   <title>WattsProtect™ Demonstrator • Operations Dashboard</title>
   <meta
     name="description"
-    content="WattsProtect™ Operations Dashboard — review-only governed simulation of predictive calibration-integrity, workflow-governance, and evidence-preservation architecture."
+    content="WattsProtect™ Operations Dashboard — review-only governed simulation with live contextual environmental ingestion."
   />
   <meta
     name="theme-color"
@@ -45,8 +45,8 @@
       <section class="sidebar-panel">
         <div class="sidebar-panel-label">Runtime Posture</div>
         <div class="status-stack">
-          <span class="status-pill status-pill--blue">Review Loop Active</span>
-          <span class="status-pill status-pill--amber">Context Elevated</span>
+          <span class="status-pill status-pill--blue">Live Context Active</span>
+          <span class="status-pill status-pill--amber">Governed Review</span>
           <span class="status-pill status-pill--slate">Evidence Required</span>
         </div>
       </section>
@@ -54,19 +54,19 @@
       <section class="sidebar-panel">
         <div class="sidebar-panel-label">Live Demonstrator Scenario</div>
         <ol class="sidebar-sequence">
-          <li>Humidity increases above recent baseline</li>
-          <li>Temperature remains elevated across review window</li>
-          <li>Instrument WP-TMP-104 approaches threshold-proximate state</li>
+          <li>Outside weather is ingested as bounded contextual input</li>
+          <li>Temperature and humidity are compared to bounded baselines</li>
+          <li>Instrument WP-TMP-104 is re-scored in bounded logic</li>
           <li>Predictive review alert enters governed workflow</li>
-          <li>Technician review remains open pending evidence completion</li>
+          <li>Closure remains blocked until evidence completion</li>
         </ol>
       </section>
 
       <section class="sidebar-panel">
         <div class="sidebar-panel-label">Boundary Reminder</div>
         <p class="sidebar-note">
-          Dashboard values shown in this environment are part of a governed simulation of
-          architecture behavior and are not represented as validated predictive performance, live
+          Dashboard values shown in this environment are part of a governed simulation with live
+          contextual ingestion and are not represented as validated predictive performance, live
           calibration truth, or field-proven regulated deployment.
         </p>
       </section>
@@ -76,7 +76,7 @@
       <header class="topbar">
         <div class="topbar-copy">
           <div class="eyebrow">WattsProtect™ Operations Dashboard</div>
-          <h1 class="page-title">Governed Operational View</h1>
+          <h1 class="page-title">Governed Operational View with Live Context</h1>
         </div>
 
         <div class="topbar-actions">
@@ -91,43 +91,46 @@
         <article class="metric-card metric-card--strong">
           <div class="metric-label">Monitored Instruments</div>
           <div class="metric-value">12</div>
-          <div class="metric-subvalue">1 instrument in threshold-proximate review state</div>
+          <div class="metric-subvalue">1 focal instrument actively re-scored against live context</div>
         </article>
 
         <article class="metric-card metric-card--strong">
           <div class="metric-label">Open Workflow Events</div>
           <div class="metric-value">3</div>
-          <div class="metric-subvalue">1 escalated • 1 pending technician review • 1 hold state</div>
+          <div class="metric-subvalue">Governed review stays active while evidence remains incomplete</div>
         </article>
 
         <article class="metric-card metric-card--strong">
-          <div class="metric-label">Evidence Integrity</div>
-          <div class="metric-value">1 incomplete event</div>
-          <div class="metric-subvalue">Closure blocked until required event record is completed</div>
+          <div class="metric-label">Context Source</div>
+          <div class="metric-value">Live Outside Weather</div>
+          <div class="metric-subvalue">Temperature • Humidity • Pressure mapped into bounded review logic</div>
         </article>
       </section>
 
       <section class="content-card content-card--full">
         <div class="card-kicker">Operational Summary</div>
-        <h2 class="card-title">Context change is visible. Risk is legible. Governance is active.</h2>
+        <h2 class="card-title">Live context is visible. Risk is legible. Governance is active.</h2>
         <p class="card-text">
-          The current review window shows elevated humidity and sustained temperature shift in the
-          monitored environment associated with instrument WP-TMP-104. The system has classified
-          this instrument as threshold-proximate under a review-state workflow. Human action remains
-          attributable, and event closure remains blocked pending evidence completion.
+          This dashboard ingests live outside temperature, humidity, and pressure as bounded
+          contextual input and maps those signals into review significance for the monitored event.
+          The focal instrument may move from stable toward threshold-proximate posture without any
+          claim that the weather feed itself is calibration truth. The architecture remains bounded:
+          live context strengthens meaning, workflow governs response, and evidence gates closure.
         </p>
       </section>
 
       <section class="grid grid--two">
         <article class="content-card content-card--emphasis">
-          <div class="card-kicker">Environmental Context</div>
-          <h3 class="card-title">Current monitored context window</h3>
+          <div class="card-kicker">Live Environmental Context</div>
+          <h3 class="card-title">Current monitored outside window</h3>
           <div class="timeline-grid">
             <div class="timeline-step">
               <div class="timeline-index">T</div>
               <div class="timeline-body">
                 <div class="timeline-title">Temperature</div>
-                <div class="timeline-text">76.8°F current • +4.2°F over recent operating baseline</div>
+                <div class="timeline-text">
+                  Live outside temperature is compared against bounded baseline to determine contextual strengthening.
+                </div>
               </div>
             </div>
 
@@ -135,7 +138,9 @@
               <div class="timeline-index">H</div>
               <div class="timeline-body">
                 <div class="timeline-title">Humidity</div>
-                <div class="timeline-text">67% RH current • elevated across rolling 6-hour window</div>
+                <div class="timeline-text">
+                  Live outside humidity is evaluated as one of the primary contextual drivers in the current review loop.
+                </div>
               </div>
             </div>
 
@@ -143,7 +148,9 @@
               <div class="timeline-index">P</div>
               <div class="timeline-body">
                 <div class="timeline-title">Pressure</div>
-                <div class="timeline-text">Stable relative band • no dominant pressure anomaly</div>
+                <div class="timeline-text">
+                  Live outside pressure is tracked as bounded contextual support, not as a dominant truth source.
+                </div>
               </div>
             </div>
 
@@ -151,7 +158,9 @@
               <div class="timeline-index">C</div>
               <div class="timeline-body">
                 <div class="timeline-title">Context Classification</div>
-                <div class="timeline-text">Elevated environmental concern • contextual strengthening active</div>
+                <div class="timeline-text">
+                  The environmental window is continuously classified in bounded form to support review significance.
+                </div>
               </div>
             </div>
           </div>
@@ -161,12 +170,12 @@
           <div class="card-kicker">Governance State</div>
           <h3 class="card-title">Current operational control posture</h3>
           <ul class="boundary-list">
-            <li>Predictive review alert emitted for WP-TMP-104</li>
-            <li>Workflow state = Review Pending</li>
-            <li>Assigned actor = Technician / Metrology Role</li>
-            <li>Supervisor escalation path available</li>
-            <li>Override path requires recorded justification</li>
-            <li>Closure blocked until evidence object is complete</li>
+            <li>Live context may strengthen event meaning</li>
+            <li>Predictive review alert remains bounded and reviewable</li>
+            <li>Workflow state remains attributable and controlled</li>
+            <li>Supervisor escalation path remains available</li>
+            <li>Override path remains justification-bound</li>
+            <li>Closure remains blocked until evidence object is complete</li>
           </ul>
         </article>
       </section>
@@ -180,8 +189,8 @@
             <div class="feature-index">01</div>
             <div class="feature-title">WP-TMP-104</div>
             <p class="feature-text">
-              Primary monitored instrument for current scenario. Drift concern has strengthened under
-              elevated humidity and temperature conditions. Threshold proximity is now review-worthy.
+              Primary monitored instrument for the live-context scenario. Live environmental
+              movement is continuously re-scored in bounded form to determine review significance.
             </p>
             <ul class="check-list">
               <li>Observed State: Active</li>
@@ -213,15 +222,15 @@
             <div class="feature-index">03</div>
             <div class="feature-title">WP-HUM-318</div>
             <p class="feature-text">
-              Secondary environmental instrument recording elevated humidity profile used for
-              contextual strengthening inside the present review window.
+              Environmental monitor supporting the live contextual layer. Elevated humidity may
+              strengthen interpretation for the focal event without becoming uncontrolled truth.
             </p>
             <ul class="check-list">
               <li>Observed State: Elevated</li>
               <li>Predicted State: Elevated / Contextual</li>
               <li>Confidence Class: High</li>
               <li>Workflow State: Supporting Signal Only</li>
-              <li>Evidence State: Available for linkage</li>
+              <li>Evidence State: Available for Linkage</li>
             </ul>
           </article>
 
@@ -229,8 +238,8 @@
             <div class="feature-index">04</div>
             <div class="feature-title">WP-FLW-091</div>
             <p class="feature-text">
-              Flow-related instrument remains within operating expectations and is not currently
-              contributing to active review escalation.
+              Flow-related instrument remains within expected operating expectations and is not
+              presently contributing to the active review event.
             </p>
             <ul class="check-list">
               <li>Observed State: Stable</li>
@@ -253,8 +262,8 @@
               <div class="timeline-body">
                 <div class="timeline-title">Predictive Review Alert • WP-TMP-104</div>
                 <div class="timeline-text">
-                  Triggered due to contextual strengthening under elevated humidity and sustained
-                  temperature divergence. Routed to technician review.
+                  Triggered when live environmental strengthening and bounded instrument logic combine
+                  to support threshold-proximate review posture.
                 </div>
               </div>
             </div>
@@ -287,7 +296,7 @@
           <div class="card-kicker">Review Continuity</div>
           <h3 class="card-title">Required path from dashboard to audit</h3>
           <ul class="boundary-list">
-            <li>Dashboard establishes contextual and predictive legibility</li>
+            <li>Dashboard establishes live contextual and predictive legibility</li>
             <li>Instrument detail localizes the event and its threshold posture</li>
             <li>Workflow execution governs attributable human response</li>
             <li>Evidence view preserves audit-defensible event meaning</li>
@@ -306,8 +315,8 @@
 
       <footer class="footer">
         <div class="footer-copy">
-          WattsProtect™ Operations Dashboard • Review Only • Governed Simulation • No implied
-          validation, implementation, deployment, commercialization, or derivative rights
+          WattsProtect™ Operations Dashboard • Review Only • Governed Simulation with Live Context •
+          No implied validation, implementation, deployment, commercialization, or derivative rights
         </div>
         <div class="footer-copy" data-wp-render="footer-runtime"></div>
       </footer>
@@ -316,6 +325,7 @@
 
   <script src="./js/state.js"></script>
   <script src="./js/app.js"></script>
+  <script src="./js/live-environment.js"></script>
   <script src="./js/simulation.js"></script>
   <script src="./js/workflow-engine.js"></script>
   <script src="./js/evidence-engine.js"></script>
