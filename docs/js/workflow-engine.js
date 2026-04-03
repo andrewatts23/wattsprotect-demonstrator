@@ -3,18 +3,19 @@
 
   const app = window.WP_DEMO_APP;
   const simulation = window.WP_DEMO_SIMULATION;
+  const state = window.WP_DEMO_STATE;
 
-  if (!app || !simulation) {
+  if (!app || !simulation || !state) {
     console.error("WattsProtect™ workflow engine dependencies are unavailable.");
     return;
   }
 
-  const { state, formatLabel, formatDateTime } = app;
+  const { formatLabel } = app;
 
   const createTimestamp = () => new Date().toISOString();
 
   const workflowEngine = {
-    version: "1.0.0",
+    version: "2.0.0",
     mode: "governed_workflow_simulation",
 
     getPrimaryWorkflow() {
@@ -80,7 +81,7 @@
           label: "Condition Preserved",
           status: evidence.condition ? "complete" : "incomplete",
           description:
-            "The condition that triggered governed review must be preserved as explicit event meaning."
+            "The live contextual condition that triggered governed review must be preserved as explicit event meaning."
         },
         {
           checkpointId: "CHK-DEC-01",
@@ -136,7 +137,7 @@
         {
           actionId: "ACT-TECH-REVIEW",
           label: "Technician Review",
-          allowed: workflow.assignedRole === "Technician / Metrology" || workflow.state === "review_pending",
+          allowed: true,
           description:
             "Initial attributable review path performed by the assigned technician role."
         },
@@ -174,9 +175,9 @@
     technicianReview(payload = {}) {
       const workflow = this.getPrimaryWorkflow();
       const evidence = this.getPrimaryEvidence();
-      const alert = this.getPrimaryAlert();
+      const reviewAlert = this.getPrimaryAlert();
 
-      if (!workflow || !evidence || !alert) {
+      if (!workflow || !evidence || !reviewAlert) {
         return null;
       }
 
@@ -186,9 +187,9 @@
       workflow.summary =
         "Technician review has been recorded and the event remains under governed control pending evidence completeness.";
 
-      alert.status = "open";
-      alert.summary =
-        "Technician review confirms the event remains review-worthy and must continue under governed workflow control.";
+      reviewAlert.status = "open";
+      reviewAlert.summary =
+        "Technician review confirms the event remains review-worthy under bounded live-context interpretation.";
 
       evidence.actor =
         payload.actor ||
@@ -203,7 +204,7 @@
         payload.result ||
         "Workflow remains open pending complete evidence preservation and possible escalation if required.";
 
-      simulation.annotateRuntimeState();
+      simulation.syncWithLiveEnvironment();
 
       return {
         action: "technician_review_recorded",
@@ -247,7 +248,7 @@
 
       state.metrics.escalatedEvents = Math.max(state.metrics.escalatedEvents, 1);
 
-      simulation.setPhase("escalated_review");
+      simulation.syncWithLiveEnvironment();
 
       return {
         action: "supervisor_escalation_recorded",
@@ -283,7 +284,7 @@
         payload.result ||
         "Event remains on hold because override does not dissolve evidence or closure obligations.";
 
-      simulation.setPhase("evidence_hold");
+      simulation.syncWithLiveEnvironment();
 
       return {
         action: "override_requested",
@@ -321,7 +322,7 @@
         payload.result ||
         "Event cannot close until the evidence object is complete and audit continuity is preserved.";
 
-      simulation.setPhase("evidence_hold");
+      simulation.syncWithLiveEnvironment();
 
       return {
         action: "evidence_hold_recorded",
@@ -368,7 +369,7 @@
 
       state.metrics.evidenceIncompleteEvents = 0;
 
-      simulation.setPhase("export_ready");
+      simulation.syncWithLiveEnvironment();
 
       return {
         action: "closure_gate_released",
@@ -389,6 +390,13 @@
       return [
         {
           stepId: "WF-TL-01",
+          label: "Live Context Intake",
+          state: "complete",
+          detail:
+            "Live weather context has been ingested and mapped into bounded environmental interpretation."
+        },
+        {
+          stepId: "WF-TL-02",
           label: "Alert Intake",
           state: "complete",
           detail:
@@ -397,14 +405,14 @@
             " has been converted from system signal into governed event."
         },
         {
-          stepId: "WF-TL-02",
+          stepId: "WF-TL-03",
           label: "Actor Assignment",
           state: "complete",
           detail:
             "Assigned role is " + workflow.assignedRole + " under attributable control."
         },
         {
-          stepId: "WF-TL-03",
+          stepId: "WF-TL-04",
           label: "Governed Review",
           state:
             workflow.state === "review_pending" ||
@@ -415,16 +423,6 @@
               : "incomplete",
           detail:
             "Review path has been opened and remains governed rather than passive."
-        },
-        {
-          stepId: "WF-TL-04",
-          label: "Escalation / Override Control",
-          state:
-            workflow.state === "escalated_review" || workflow.state === "evidence_hold"
-              ? "active"
-              : "available",
-          detail:
-            "Escalation and override remain bounded and attributable rather than informal."
         },
         {
           stepId: "WF-TL-05",
