@@ -2,31 +2,21 @@
   "use strict";
 
   const app = window.WP_DEMO_APP;
+  const state = window.WP_DEMO_STATE;
 
-  if (!app) {
-    console.error("WattsProtect™ Demonstrator app layer is unavailable.");
+  if (!app || !state) {
+    console.error("WattsProtect™ simulation dependencies are unavailable.");
     return;
   }
 
-  const {
-    state,
-    formatLabel,
-    formatNumber,
-    formatDateTime
-  } = app;
+  const { formatLabel, formatNumber } = app;
 
   const clone = (value) => JSON.parse(JSON.stringify(value));
-
-  const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
-
   const createTimestamp = () => new Date().toISOString();
 
   const scenarioEngine = {
-    version: "1.0.0",
-    mode: "governed_simulation",
-    activeTick: 0,
-    startedAt: createTimestamp(),
-    lastUpdatedAt: createTimestamp(),
+    version: "2.0.0",
+    mode: "live_context_aware_simulation",
 
     baseSnapshot: {
       activeScenario: clone(state.activeScenario),
@@ -37,52 +27,6 @@
       alerts: clone(state.alerts),
       workflows: clone(state.workflows),
       evidence: clone(state.evidence)
-    },
-
-    thresholds: {
-      temperatureDeltaReview: 3.5,
-      humidityDeltaReview: 8,
-      cumulativeConcernEscalation: 16,
-      cumulativeConcernThresholdProximate: 12
-    },
-
-    phaseMap: {
-      baseline: {
-        key: "baseline",
-        label: "Baseline",
-        description:
-          "Instrument and contextual posture remain inside ordinary monitored bounds."
-      },
-      environmental_shift: {
-        key: "environmental_shift",
-        label: "Environmental Shift",
-        description:
-          "Context moves above recent baseline, increasing review significance."
-      },
-      review_pending: {
-        key: "review_pending",
-        label: "Review Pending",
-        description:
-          "Predictive review alert is active and governed workflow has begun."
-      },
-      escalated_review: {
-        key: "escalated_review",
-        label: "Escalated Review",
-        description:
-          "Supervisor path is active due to unresolved or heightened concern."
-      },
-      evidence_hold: {
-        key: "evidence_hold",
-        label: "Evidence Hold",
-        description:
-          "Closure remains blocked pending full preservation of required event meaning."
-      },
-      export_ready: {
-        key: "export_ready",
-        label: "Export Ready",
-        description:
-          "Evidence chain is complete and audit package is ready for bounded export."
-      }
     },
 
     getActiveInstrument() {
@@ -97,12 +41,12 @@
       return state.workflows.find((item) => item.workflowId === "WF-104-REV-01") || null;
     },
 
-    getAlertById(alertId) {
-      return state.alerts.find((item) => item.alertId === alertId) || null;
+    getEvidenceObject() {
+      return state.evidence || null;
     },
 
-    getPrimaryEvidence() {
-      return state.evidence;
+    getAlertById(alertId) {
+      return state.alerts.find((item) => item.alertId === alertId) || null;
     },
 
     resetState() {
@@ -115,11 +59,293 @@
       state.workflows = clone(this.baseSnapshot.workflows);
       state.evidence = clone(this.baseSnapshot.evidence);
 
-      this.activeTick = 0;
-      this.lastUpdatedAt = createTimestamp();
+      this.annotateRuntimeState();
+
+      return this.snapshot();
+    },
+
+    calculateRiskScore(instrument) {
+      const env = state.environmentalWindow.signals;
+      const temperatureDelta = Math.max(0, env.temperatureF.baselineDelta);
+      const humidityDelta = Math.max(0, env.humidityRh.baselineDelta);
+      const pressureDelta = Math.abs(env.pressureHpa.baselineDelta);
+
+      const weighting = instrument.driftModel.environmentalWeighting;
+
+      const weightedTemperature = temperatureDelta * weighting.temperature;
+      const weightedHumidity = humidityDelta * weighting.humidity;
+      const weightedPressure = pressureDelta * weighting.pressure;
+
+      const rawScore =
+        instrument.driftModel.baselineScore +
+        weightedTemperature +
+        weightedHumidity +
+        weightedPressure;
+
+      return Number(rawScore.toFixed(1));
+    },
+
+    classifyInstrumentRisk(score) {
+      const thresholds = state.thresholds.environment;
+
+      if (score >= thresholds.cumulativeConcernEscalation) {
+        return {
+          phase: "escalated_review",
+          predictedState: "threshold_proximate",
+          thresholdClass: "review_worthy",
+          confidenceClass: "high"
+        };
+      }
+
+      if (score >= thresholds.cumulativeConcernThresholdProximate) {
+        return {
+          phase: "review_pending",
+          predictedState: "threshold_proximate",
+          thresholdClass: "review_worthy",
+          confidenceClass: "reviewable"
+        };
+      }
+
+      if (score > 6) {
+        return {
+          phase: "environmental_shift",
+          predictedState: "stable",
+          thresholdClass: "reviewable",
+          confidenceClass: "reviewable"
+        };
+      }
+
+      return {
+        phase: "baseline",
+        predictedState: "stable",
+        thresholdClass: "normal",
+        confidenceClass: "normal"
+      };
+    },
+
+    syncWithLiveEnvironment() {
+      const activeInstrument = this.getActiveInstrument();
+      const humidityInstrument = this.getSupportingHumidityInstrument();
+      const workflow = this.getPrimaryWorkflow();
+      const evidence = this.getEvidenceObject();
+      const reviewAlert = this.getAlertById("ALT-WP-104-REV-01");
+      const evidenceHoldAlert = this.getAlertById("ALT-WP-104-EVD-01");
+      const escalationAlert = this.getAlertById("ALT-WP-104-ESC-01");
+
+      if (!activeInstrument || !workflow || !evidence) {
+        return this.snapshot();
+      }
+
+      const activeScore = this.calculateRiskScore(activeInstrument);
+      const activeRisk = this.classifyInstrumentRisk(activeScore);
+
+      activeInstrument.driftModel.currentRiskScore = activeScore;
+      activeInstrument.driftModel.currentRiskClass = activeRisk.thresholdClass;
+      activeInstrument.predictedState = activeRisk.predictedState;
+      activeInstrument.thresholdProximityClass = activeRisk.thresholdClass;
+      activeInstrument.confidenceClass = activeRisk.confidenceClass;
+      activeInstrument.workflowState =
+        workflow.state === "export_ready"
+          ? "review_pending"
+          : workflow.state === "evidence_hold"
+            ? "review_pending"
+            : activeRisk.phase === "baseline"
+              ? "none_open"
+              : "review_pending";
+      activeInstrument.evidenceState = workflow.closureBlocked
+        ? "incomplete"
+        : "available_for_linkage";
+
+      activeInstrument.summary =
+        "Primary monitored instrument in the active scenario. Live contextual movement is re-scored continuously in bounded form to determine review significance.";
+
+      if (humidityInstrument) {
+        humidityInstrument.observedState =
+          state.environmentalWindow.signals.humidityRh.baselineDelta > 0
+            ? "elevated"
+            : "stable";
+        humidityInstrument.predictedState =
+          state.environmentalWindow.signals.humidityRh.baselineDelta > 0
+            ? "elevated_contextual"
+            : "stable";
+        humidityInstrument.thresholdProximityClass =
+          state.environmentalWindow.signals.humidityRh.baselineDelta > 0
+            ? "contextual"
+            : "normal";
+        humidityInstrument.confidenceClass =
+          state.environmentalWindow.signals.humidityRh.baselineDelta > 0
+            ? "high"
+            : "normal";
+        humidityInstrument.driftModel.currentRiskScore = Number(
+          Math.max(0, state.environmentalWindow.signals.humidityRh.baselineDelta).toFixed(1)
+        );
+        humidityInstrument.driftModel.currentRiskClass =
+          humidityInstrument.thresholdProximityClass;
+      }
+
+      if (workflow.state !== "evidence_hold" && workflow.state !== "export_ready") {
+        workflow.state = activeRisk.phase === "escalated_review"
+          ? "escalated_review"
+          : "review_pending";
+        workflow.assignedRole = activeRisk.phase === "escalated_review"
+          ? "Supervisor Review"
+          : "Technician / Metrology";
+        workflow.closureBlocked = true;
+      }
+
+      if (reviewAlert) {
+        reviewAlert.status = activeRisk.phase === "baseline" ? "available" : "open";
+        reviewAlert.summary =
+          activeRisk.phase === "baseline"
+            ? "Predictive review alert logic is available but not yet triggered by live contextual conditions."
+            : "Threshold-proximate posture detected under live environmental strengthening.";
+      }
+
+      if (evidenceHoldAlert) {
+        evidenceHoldAlert.status = workflow.closureBlocked ? "open" : "resolved";
+      }
+
+      if (escalationAlert) {
+        escalationAlert.status =
+          workflow.state === "escalated_review" ? "open" : "available";
+      }
+
+      state.activeScenario.phase =
+        workflow.state === "evidence_hold" || workflow.state === "export_ready"
+          ? workflow.state
+          : activeRisk.phase;
+
+      state.metrics.openWorkflowEvents =
+        activeRisk.phase === "baseline" && !workflow.closureBlocked ? 0 : 3;
+      state.metrics.escalatedEvents = workflow.state === "escalated_review" ? 1 : 0;
+      state.metrics.evidenceIncompleteEvents = workflow.closureBlocked ? 1 : 0;
+
+      state.historicalPattern.contextualStrengthening =
+        activeRisk.phase !== "baseline";
+
+      evidence.condition =
+        `Live outside context for ${state.liveEnvironment.activeLocation.label} indicates temperature ${formatNumber(state.environmentalWindow.signals.temperatureF.current)}°F and humidity ${formatNumber(state.environmentalWindow.signals.humidityRh.current, 0)}% RH, strengthening bounded review significance for ${activeInstrument.instrumentId}.`;
+
+      evidence.decision =
+        workflow.state === "export_ready"
+          ? "The evidence chain has been completed and bounded export posture has been achieved."
+          : workflow.state === "evidence_hold"
+            ? "The event remains on hold because evidence completion is still required before closure."
+            : workflow.state === "escalated_review"
+              ? "A governed review event has escalated to supervisory posture under strengthened live contextual concern."
+              : "A governed review event remains active because live contextual movement keeps the instrument inside review-worthy posture.";
+
+      evidence.actor =
+        `${workflow.assignedRole} role is currently the attributable responder inside the governed event chain.`;
+
+      evidence.action =
+        workflow.state === "export_ready"
+          ? "Evidence object has been sealed and linked to audit export path."
+          : workflow.state === "evidence_hold"
+            ? "Workflow remains on evidence hold pending completion of preserved event meaning."
+            : "Workflow remains under governed control with escalation, override, and evidence obligations preserved.";
+
+      evidence.result =
+        workflow.closureBlocked
+          ? "Event remains reviewable and not yet closure-eligible because the evidence chain is still open."
+          : "Event is export-ready under bounded review posture because the evidence chain is sufficiently complete.";
 
       this.annotateRuntimeState();
+
       return this.snapshot();
+    },
+
+    annotateRuntimeState() {
+      const activeInstrument = this.getActiveInstrument();
+      const workflow = this.getPrimaryWorkflow();
+      const evidence = this.getEvidenceObject();
+
+      state.liveEnvironment.lastUiRefreshAt = createTimestamp();
+
+      if (activeInstrument) {
+        activeInstrument.runtime = {
+          displayObservedState: formatLabel(activeInstrument.observedState),
+          displayPredictedState: formatLabel(activeInstrument.predictedState),
+          displayThresholdClass: formatLabel(activeInstrument.thresholdProximityClass),
+          displayConfidenceClass: formatLabel(activeInstrument.confidenceClass),
+          displayWorkflowState: formatLabel(activeInstrument.workflowState),
+          displayEvidenceState: formatLabel(activeInstrument.evidenceState),
+          displayLastCalibrationAt: app.formatDateTime(activeInstrument.lastCalibrationAt),
+          displayRiskScore: formatNumber(activeInstrument.driftModel.currentRiskScore)
+        };
+      }
+
+      if (workflow) {
+        workflow.runtime = {
+          displayState: formatLabel(workflow.state),
+          closureStatus: workflow.closureBlocked ? "Blocked Pending Evidence" : "Closure Eligible",
+          escalationDisplay: workflow.escalationAvailable ? "Available" : "Not Available",
+          overrideDisplay: workflow.overrideAvailable ? "Available" : "Not Available"
+        };
+      }
+
+      if (evidence) {
+        evidence.runtime = {
+          displayChainStatus: formatLabel(evidence.chainStatus),
+          exportReady: !workflow.closureBlocked
+        };
+      }
+    },
+
+    setPhase(phaseKey) {
+      const workflow = this.getPrimaryWorkflow();
+
+      if (!workflow) {
+        return this.snapshot();
+      }
+
+      if (phaseKey === "baseline") {
+        workflow.state = "review_pending";
+        workflow.assignedRole = "Technician / Metrology";
+        workflow.closureBlocked = true;
+      } else if (phaseKey === "environmental_shift") {
+        workflow.state = "review_pending";
+        workflow.assignedRole = "Technician / Metrology";
+        workflow.closureBlocked = true;
+      } else if (phaseKey === "review_pending") {
+        workflow.state = "review_pending";
+        workflow.assignedRole = "Technician / Metrology";
+        workflow.closureBlocked = true;
+      } else if (phaseKey === "escalated_review") {
+        workflow.state = "escalated_review";
+        workflow.assignedRole = "Supervisor Review";
+        workflow.closureBlocked = true;
+      } else if (phaseKey === "evidence_hold") {
+        workflow.state = "evidence_hold";
+        workflow.closureBlocked = true;
+      } else if (phaseKey === "export_ready") {
+        workflow.state = "export_ready";
+        workflow.closureBlocked = false;
+      }
+
+      state.activeScenario.phase = phaseKey;
+      this.syncWithLiveEnvironment();
+
+      return this.snapshot();
+    },
+
+    advance() {
+      const order = [
+        "baseline",
+        "environmental_shift",
+        "review_pending",
+        "escalated_review",
+        "evidence_hold",
+        "export_ready"
+      ];
+
+      const current = state.activeScenario.phase;
+      const index = order.indexOf(current);
+      const nextPhase = index === -1
+        ? "baseline"
+        : order[Math.min(index + 1, order.length - 1)];
+
+      return this.setPhase(nextPhase);
     },
 
     snapshot() {
@@ -127,10 +353,9 @@
         generatedAt: createTimestamp(),
         engineVersion: this.version,
         mode: this.mode,
-        activeTick: this.activeTick,
         phase: state.activeScenario.phase,
-        phaseLabel: this.describePhase(state.activeScenario.phase).label,
         state: clone({
+          liveEnvironment: state.liveEnvironment,
           activeScenario: state.activeScenario,
           metrics: state.metrics,
           instruments: state.instruments,
@@ -143,489 +368,15 @@
       };
     },
 
-    describePhase(phaseKey) {
-      return this.phaseMap[phaseKey] || {
-        key: phaseKey,
-        label: formatLabel(phaseKey),
-        description: "Phase description unavailable."
-      };
-    },
-
-    annotateRuntimeState() {
-      const activeInstrument = this.getActiveInstrument();
-      const supportingHumidityInstrument = this.getSupportingHumidityInstrument();
-      const workflow = this.getPrimaryWorkflow();
-      const evidence = this.getPrimaryEvidence();
-
-      if (!activeInstrument || !workflow || !evidence) {
-        return;
-      }
-
-      const tempDelta = state.environmentalWindow.signals.temperatureF.baselineDelta;
-      const humidityDelta = state.environmentalWindow.signals.humidityRh.baselineDelta;
-      const cumulativeConcern = tempDelta + humidityDelta;
-
-      state.activeScenario.runtime = {
-        engineVersion: this.version,
-        lastUpdatedAt: this.lastUpdatedAt,
-        cumulativeConcernScore: cumulativeConcern,
-        thresholdReviewCrossed:
-          tempDelta >= this.thresholds.temperatureDeltaReview ||
-          humidityDelta >= this.thresholds.humidityDeltaReview,
-        thresholdProximateMaintained:
-          cumulativeConcern >= this.thresholds.cumulativeConcernThresholdProximate
-      };
-
-      activeInstrument.runtime = {
-        lastUpdatedAt: this.lastUpdatedAt,
-        cumulativeConcernScore: cumulativeConcern,
-        temperatureDelta: tempDelta,
-        humidityDelta: humidityDelta,
-        displayObservedState: formatLabel(activeInstrument.observedState),
-        displayPredictedState: formatLabel(activeInstrument.predictedState),
-        displayThresholdClass: formatLabel(activeInstrument.thresholdProximityClass),
-        displayConfidenceClass: formatLabel(activeInstrument.confidenceClass),
-        displayWorkflowState: formatLabel(activeInstrument.workflowState),
-        displayEvidenceState: formatLabel(activeInstrument.evidenceState),
-        displayLastCalibrationAt: formatDateTime(activeInstrument.lastCalibrationAt)
-      };
-
-      if (supportingHumidityInstrument) {
-        supportingHumidityInstrument.runtime = {
-          lastUpdatedAt: this.lastUpdatedAt,
-          linkedScenario: state.activeScenario.scenarioId,
-          displayObservedState: formatLabel(supportingHumidityInstrument.observedState),
-          displayPredictedState: formatLabel(supportingHumidityInstrument.predictedState)
-        };
-      }
-
-      workflow.runtime = {
-        lastUpdatedAt: this.lastUpdatedAt,
-        displayState: formatLabel(workflow.state),
-        closureStatus: workflow.closureBlocked ? "Blocked Pending Evidence" : "Closure Eligible",
-        escalationDisplay: workflow.escalationAvailable ? "Available" : "Not Available",
-        overrideDisplay: workflow.overrideAvailable ? "Available" : "Not Available"
-      };
-
-      evidence.runtime = {
-        lastUpdatedAt: this.lastUpdatedAt,
-        displayChainStatus: formatLabel(evidence.chainStatus),
-        exportReady:
-          state.activeScenario.phase === "export_ready" &&
-          workflow.closureBlocked === false
-      };
-    },
-
-    deriveConcernClass() {
-      const tempDelta = state.environmentalWindow.signals.temperatureF.baselineDelta;
-      const humidityDelta = state.environmentalWindow.signals.humidityRh.baselineDelta;
-      const cumulative = tempDelta + humidityDelta;
-
-      if (cumulative >= this.thresholds.cumulativeConcernEscalation) {
-        return "significant_concern";
-      }
-
-      if (cumulative >= this.thresholds.cumulativeConcernThresholdProximate) {
-        return "elevated_environmental_concern";
-      }
-
-      return "reviewable_environmental_shift";
-    },
-
-    applyBaselinePhase() {
-      const activeInstrument = this.getActiveInstrument();
-      const humidityInstrument = this.getSupportingHumidityInstrument();
-      const workflow = this.getPrimaryWorkflow();
-      const reviewAlert = this.getAlertById("ALT-WP-104-REV-01");
-      const evidenceHoldAlert = this.getAlertById("ALT-WP-104-EVD-01");
-      const escalationAlert = this.getAlertById("ALT-WP-104-ESC-01");
-
-      state.activeScenario.phase = "baseline";
-      state.activeScenario.status = "active";
-
-      state.environmentalWindow.classification = "reviewable_environmental_shift";
-      state.environmentalWindow.signals.temperatureF.current = 73.2;
-      state.environmentalWindow.signals.temperatureF.baselineDelta = 1.4;
-      state.environmentalWindow.signals.temperatureF.state = "stable";
-      state.environmentalWindow.signals.temperatureF.summary =
-        "Temperature is slightly above prior baseline but remains below active review threshold.";
-
-      state.environmentalWindow.signals.humidityRh.current = 58;
-      state.environmentalWindow.signals.humidityRh.baselineDelta = 4;
-      state.environmentalWindow.signals.humidityRh.state = "stable";
-      state.environmentalWindow.signals.humidityRh.summary =
-        "Humidity is elevated mildly but does not yet strengthen event posture into governed review.";
-
-      state.environmentalWindow.interpretation =
-        "Context remains observable but does not yet require a governed review path.";
-
-      if (activeInstrument) {
-        activeInstrument.predictedState = "stable";
-        activeInstrument.thresholdProximityClass = "normal";
-        activeInstrument.confidenceClass = "normal";
-        activeInstrument.workflowState = "none_open";
-        activeInstrument.evidenceState = "not_required";
-        activeInstrument.summary =
-          "Primary instrument remains inside stable posture under current contextual conditions.";
-      }
-
-      if (humidityInstrument) {
-        humidityInstrument.observedState = "stable";
-        humidityInstrument.predictedState = "stable";
-        humidityInstrument.thresholdProximityClass = "normal";
-        humidityInstrument.summary =
-          "Supporting humidity instrument remains inside monitored baseline range.";
-      }
-
-      if (workflow) {
-        workflow.state = "review_pending";
-        workflow.closureBlocked = true;
-        workflow.summary =
-          "Workflow artifact preserved for demonstrator continuity but not yet active as a triggered governed event in baseline posture.";
-      }
-
-      if (reviewAlert) {
-        reviewAlert.status = "available";
-        reviewAlert.summary =
-          "Predictive review alert logic is available but not yet triggered in baseline posture.";
-      }
-
-      if (evidenceHoldAlert) {
-        evidenceHoldAlert.status = "available";
-      }
-
-      if (escalationAlert) {
-        escalationAlert.status = "available";
-      }
-
-      state.metrics.openWorkflowEvents = 1;
-      state.metrics.escalatedEvents = 0;
-      state.metrics.evidenceIncompleteEvents = 0;
-
-      state.evidence.chainStatus = "preserved_reviewable";
-      state.evidence.condition =
-        "No threshold-proximate event condition is active in baseline posture.";
-      state.evidence.decision =
-        "No governed review decision has yet been forced by contextual state.";
-      state.evidence.actor =
-        "No attributable action required beyond passive monitoring posture.";
-      state.evidence.action =
-        "Monitoring continues without transition into active review workflow.";
-      state.evidence.result =
-        "System remains in bounded observation mode with no evidence-completion hold active.";
-
-      this.lastUpdatedAt = createTimestamp();
-      this.annotateRuntimeState();
-
-      return this.snapshot();
-    },
-
-    applyEnvironmentalShiftPhase() {
-      const activeInstrument = this.getActiveInstrument();
-      const humidityInstrument = this.getSupportingHumidityInstrument();
-      const reviewAlert = this.getAlertById("ALT-WP-104-REV-01");
-
-      state.activeScenario.phase = "environmental_shift";
-
-      state.environmentalWindow.signals.temperatureF.current = 75.4;
-      state.environmentalWindow.signals.temperatureF.baselineDelta = 3.2;
-      state.environmentalWindow.signals.temperatureF.state = "elevated";
-      state.environmentalWindow.signals.temperatureF.summary =
-        "Temperature has moved above recent baseline and is approaching active review significance.";
-
-      state.environmentalWindow.signals.humidityRh.current = 64;
-      state.environmentalWindow.signals.humidityRh.baselineDelta = 8;
-      state.environmentalWindow.signals.humidityRh.state = "elevated";
-      state.environmentalWindow.signals.humidityRh.summary =
-        "Humidity has crossed the demonstrator review threshold and is strengthening event concern.";
-
-      state.environmentalWindow.classification = this.deriveConcernClass();
-      state.environmentalWindow.interpretation =
-        "Environmental context is now materially relevant and contributes to forward-looking review significance.";
-
-      if (activeInstrument) {
-        activeInstrument.predictedState = "threshold_proximate";
-        activeInstrument.thresholdProximityClass = "review_worthy";
-        activeInstrument.confidenceClass = "reviewable";
-        activeInstrument.workflowState = "review_pending";
-        activeInstrument.evidenceState = "incomplete";
-        activeInstrument.summary =
-          "Instrument posture has moved from stable to threshold-proximate under strengthened contextual conditions.";
-      }
-
-      if (humidityInstrument) {
-        humidityInstrument.observedState = "elevated";
-        humidityInstrument.predictedState = "elevated_contextual";
-        humidityInstrument.thresholdProximityClass = "contextual";
-        humidityInstrument.summary =
-          "Supporting humidity signal is now materially relevant to the active review event.";
-      }
-
-      if (reviewAlert) {
-        reviewAlert.status = "open";
-        reviewAlert.summary =
-          "Predictive review alert triggered as contextual concern and historical pattern now support governed review.";
-      }
-
-      state.metrics.openWorkflowEvents = 2;
-      state.metrics.evidenceIncompleteEvents = 1;
-
-      state.evidence.condition =
-        "Environmental context has crossed review-relevant thresholds and the active instrument has moved into threshold-proximate posture.";
-      state.evidence.decision =
-        "A governed review path has become necessary due to contextual strengthening.";
-      state.evidence.actor =
-        "Technician / Metrology role remains the initial attributable responder.";
-      state.evidence.action =
-        "Event transitions from passive observation to governed review posture.";
-      state.evidence.result =
-        "The event remains open and requires evidence continuity through workflow progression.";
-
-      this.lastUpdatedAt = createTimestamp();
-      this.annotateRuntimeState();
-
-      return this.snapshot();
-    },
-
-    applyReviewPendingPhase() {
-      const activeInstrument = this.getActiveInstrument();
-      const workflow = this.getPrimaryWorkflow();
-      const reviewAlert = this.getAlertById("ALT-WP-104-REV-01");
-      const evidenceHoldAlert = this.getAlertById("ALT-WP-104-EVD-01");
-
-      state.activeScenario.phase = "review_pending";
-
-      state.environmentalWindow.signals.temperatureF.current = 76.8;
-      state.environmentalWindow.signals.temperatureF.baselineDelta = 4.2;
-      state.environmentalWindow.signals.temperatureF.state = "elevated";
-
-      state.environmentalWindow.signals.humidityRh.current = 67;
-      state.environmentalWindow.signals.humidityRh.baselineDelta = 11;
-      state.environmentalWindow.signals.humidityRh.state = "elevated";
-
-      state.environmentalWindow.classification = "elevated_environmental_concern";
-      state.environmentalWindow.interpretation =
-        "Environmental movement is not treated as calibration truth. It is treated as contextual strengthening that increases review significance for the monitored event.";
-
-      if (activeInstrument) {
-        activeInstrument.predictedState = "threshold_proximate";
-        activeInstrument.thresholdProximityClass = "review_worthy";
-        activeInstrument.confidenceClass = "reviewable";
-        activeInstrument.workflowState = "review_pending";
-        activeInstrument.evidenceState = "incomplete";
-      }
-
-      if (workflow) {
-        workflow.state = "review_pending";
-        workflow.closureBlocked = true;
-        workflow.summary =
-          "Primary governed workflow event is active and awaiting attributable technician response.";
-      }
-
-      if (reviewAlert) {
-        reviewAlert.status = "open";
-      }
-
-      if (evidenceHoldAlert) {
-        evidenceHoldAlert.status = "open";
-      }
-
-      state.metrics.openWorkflowEvents = 3;
-      state.metrics.escalatedEvents = 1;
-      state.metrics.evidenceIncompleteEvents = 1;
-
-      state.evidence.chainStatus = "preserved_reviewable";
-      state.evidence.condition =
-        "Elevated humidity and sustained temperature divergence strengthened contextual concern while the instrument moved into threshold-proximate posture.";
-      state.evidence.decision =
-        "A governed review event was opened rather than allowing the condition to remain passive awareness.";
-      state.evidence.actor =
-        "Technician / Metrology role assigned as initial attributable responder.";
-      state.evidence.action =
-        "Review path opened under workflow control with escalation, override, and evidence gates preserved.";
-      state.evidence.result =
-        "Event remains reviewable and export-ready because the chain preserves condition, decision, actor, action, and result.";
-
-      this.lastUpdatedAt = createTimestamp();
-      this.annotateRuntimeState();
-
-      return this.snapshot();
-    },
-
-    applyEscalatedReviewPhase() {
-      const workflow = this.getPrimaryWorkflow();
-      const escalationAlert = this.getAlertById("ALT-WP-104-ESC-01");
-
-      state.activeScenario.phase = "escalated_review";
-
-      state.environmentalWindow.signals.temperatureF.current = 77.4;
-      state.environmentalWindow.signals.temperatureF.baselineDelta = 4.8;
-      state.environmentalWindow.signals.humidityRh.current = 69;
-      state.environmentalWindow.signals.humidityRh.baselineDelta = 13;
-      state.environmentalWindow.classification = "significant_concern";
-      state.environmentalWindow.interpretation =
-        "Contextual concern has intensified and now justifies supervisory visibility within the governed event path.";
-
-      if (workflow) {
-        workflow.state = "escalated_review";
-        workflow.assignedRole = "Supervisor Review";
-        workflow.closureBlocked = true;
-        workflow.summary =
-          "Supervisor review path is now active due to heightened concern and unresolved event status.";
-      }
-
-      if (escalationAlert) {
-        escalationAlert.status = "open";
-        escalationAlert.summary =
-          "Supervisor escalation has been activated to preserve controlled review under intensified contextual concern.";
-      }
-
-      state.metrics.escalatedEvents = 1;
-      state.metrics.openWorkflowEvents = 3;
-      state.metrics.evidenceIncompleteEvents = 1;
-
-      state.evidence.decision =
-        "Supervisor escalation activated because technician review alone is no longer sufficient to resolve the event confidently.";
-      state.evidence.actor =
-        "Supervisor Review role now participates in the attributable event chain.";
-      state.evidence.action =
-        "Escalation path preserved and activated under governed workflow control.";
-      state.evidence.result =
-        "Event remains under review and cannot close until preserved evidence supports a defensible result.";
-
-      this.lastUpdatedAt = createTimestamp();
-      this.annotateRuntimeState();
-
-      return this.snapshot();
-    },
-
-    applyEvidenceHoldPhase() {
-      const workflow = this.getPrimaryWorkflow();
-      const evidenceHoldAlert = this.getAlertById("ALT-WP-104-EVD-01");
-
-      state.activeScenario.phase = "evidence_hold";
-
-      if (workflow) {
-        workflow.state = "evidence_hold";
-        workflow.closureBlocked = true;
-        workflow.summary =
-          "Event remains in hold posture because full evidence completion has not yet been preserved.";
-      }
-
-      if (evidenceHoldAlert) {
-        evidenceHoldAlert.status = "open";
-        evidenceHoldAlert.summary =
-          "Closure remains blocked because one or more required evidence elements remain incomplete.";
-      }
-
-      state.metrics.evidenceIncompleteEvents = 1;
-
-      state.evidence.chainStatus = "preserved_reviewable";
-      state.evidence.decision =
-        "The event may not close because evidence completeness remains an explicit control requirement.";
-      state.evidence.action =
-        "Workflow remains on hold pending final preservation of condition, decision, actor, action, and result.";
-      state.evidence.result =
-        "The record remains open, reviewable, and incomplete until closure requirements are satisfied.";
-
-      this.lastUpdatedAt = createTimestamp();
-      this.annotateRuntimeState();
-
-      return this.snapshot();
-    },
-
-    applyExportReadyPhase() {
-      const activeInstrument = this.getActiveInstrument();
-      const workflow = this.getPrimaryWorkflow();
-      const evidenceHoldAlert = this.getAlertById("ALT-WP-104-EVD-01");
-
-      state.activeScenario.phase = "export_ready";
-
-      if (activeInstrument) {
-        activeInstrument.evidenceState = "available_for_linkage";
-        activeInstrument.workflowState = "review_pending";
-      }
-
-      if (workflow) {
-        workflow.state = "export_ready";
-        workflow.closureBlocked = false;
-        workflow.summary =
-          "Evidence chain is complete and bounded audit export is now available.";
-      }
-
-      if (evidenceHoldAlert) {
-        evidenceHoldAlert.status = "resolved";
-        evidenceHoldAlert.summary =
-          "Evidence completion requirement has been satisfied and closure gate has been released for bounded export.";
-      }
-
-      state.metrics.evidenceIncompleteEvents = 0;
-
-      state.evidence.chainStatus = "preserved_reviewable";
-      state.evidence.decision =
-        "Governed review path has completed with sufficient preserved evidence to support bounded export.";
-      state.evidence.action =
-        "Evidence object sealed and linked to the audit object for review-only export.";
-      state.evidence.result =
-        "Event meaning now survives as a coherent, reviewable, exportable institutional record.";
-
-      this.lastUpdatedAt = createTimestamp();
-      this.annotateRuntimeState();
-
-      return this.snapshot();
-    },
-
-    advance() {
-      this.activeTick += 1;
-
-      const currentPhase = state.activeScenario.phase;
-      const orderedPhases = [
-        "baseline",
-        "environmental_shift",
-        "review_pending",
-        "escalated_review",
-        "evidence_hold",
-        "export_ready"
-      ];
-
-      const currentIndex = orderedPhases.indexOf(currentPhase);
-      const nextIndex = currentIndex === -1
-        ? 0
-        : clamp(currentIndex + 1, 0, orderedPhases.length - 1);
-
-      return this.setPhase(orderedPhases[nextIndex]);
-    },
-
-    setPhase(phaseKey) {
-      switch (phaseKey) {
-        case "baseline":
-          return this.applyBaselinePhase();
-        case "environmental_shift":
-          return this.applyEnvironmentalShiftPhase();
-        case "review_pending":
-          return this.applyReviewPendingPhase();
-        case "escalated_review":
-          return this.applyEscalatedReviewPhase();
-        case "evidence_hold":
-          return this.applyEvidenceHoldPhase();
-        case "export_ready":
-          return this.applyExportReadyPhase();
-        default:
-          return this.applyReviewPendingPhase();
-      }
-    },
-
     summarizeCurrentState() {
       const activeInstrument = this.getActiveInstrument();
       const workflow = this.getPrimaryWorkflow();
-      const evidence = this.getPrimaryEvidence();
-      const phase = this.describePhase(state.activeScenario.phase);
+      const evidence = this.getEvidenceObject();
 
       return {
         generatedAt: createTimestamp(),
-        phaseKey: phase.key,
-        phaseLabel: phase.label,
-        phaseDescription: phase.description,
+        phaseLabel: formatLabel(state.activeScenario.phase),
+        phaseDescription: state.activeScenario.summary,
         instrument: activeInstrument
           ? {
               instrumentId: activeInstrument.instrumentId,
@@ -650,17 +401,18 @@
               exportClass: formatLabel(evidence.exportClass)
             }
           : null,
-        environmentalWindow: {
+        liveEnvironment: {
+          provider: state.liveEnvironment.provider,
+          location: state.liveEnvironment.activeLocation.label,
+          status: formatLabel(state.liveEnvironment.status),
+          updatedAt: state.liveEnvironment.lastUpdatedAt,
           temperatureCurrent: `${formatNumber(state.environmentalWindow.signals.temperatureF.current)}°F`,
-          temperatureDelta: `+${formatNumber(state.environmentalWindow.signals.temperatureF.baselineDelta)}°F`,
           humidityCurrent: `${formatNumber(state.environmentalWindow.signals.humidityRh.current, 0)}% RH`,
-          humidityDelta: `+${formatNumber(state.environmentalWindow.signals.humidityRh.baselineDelta, 0)}`
+          pressureCurrent: `${formatNumber(state.environmentalWindow.signals.pressureHpa.current)} hPa`
         }
       };
     }
   };
-
-  scenarioEngine.annotateRuntimeState();
 
   window.WP_DEMO_SIMULATION = scenarioEngine;
 })();
